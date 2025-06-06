@@ -359,10 +359,11 @@
       <div class="tab" onclick="switchLobby(1)">Lobby 2</div>
       <div class="tab" onclick="switchLobby(2)">Lobby 3</div>
       <div class="tab" onclick="showAllPlayersPage()">All Players</div>
+      <button class="tab" onclick="openSettingsModal()" style="margin-left: auto;">⚙️ Settings</button>
     </div>
 
     <div id="mainPage">
-      <h1>Dota 2 Team Balancer</h1>
+      <h1 id="mainTitle">Dota 2 Team Balancer</h1>
       <div class="form-group">
         <div style="position: relative;">
           <input type="text" id="name" placeholder="Nickname" oninput="showPlayerSuggestions()">
@@ -371,34 +372,34 @@
         <input type="number" id="mmr" placeholder="Rating (MMR)">
         <input type="number" id="bhv" placeholder="BHV (0-12000)">
         <input type="text" id="friendId" placeholder="Friend ID">
-        <button onclick="addToQueue()">Add to Queue</button>
-        <button onclick="moveAllToLobby()">Move All to Lobby</button>
-        <button onclick="clearCurrentLobby()" class="danger">Clear Current Lobby</button>
+        <button onclick="addToQueue()" id="addToQueueBtn">Add to Queue</button>
+        <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
+        <button onclick="clearCurrentLobby()" class="danger" id="clearLobbyBtn">Clear Current Lobby</button>
       </div>
 
       <div class="teams">
         <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
-          <h3>Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
+          <h3 id="team1Title">Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
           <div id="team1Players"></div>
           <div class="team-stats" id="team1Stats"></div>
         </div>
         <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
-          <h3>Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
+          <h3 id="team2Title">Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
           <div id="team2Players"></div>
           <div class="team-stats" id="team2Stats"></div>
         </div>
       </div>
 
       <div class="form-group">
-        <button onclick="balanceTeams()">Balance Teams</button>
+        <button onclick="balanceTeams()" id="balanceBtn">Balance Teams</button>
       </div>
 
       <div class="queue-container">
         <div class="queue-header">
-          <h3>Global Queue <span class="team-count">(<span id="queueCount">0</span>)</span></h3>
+          <h3 id="queueTitle">Global Queue <span class="team-count">(<span id="queueCount">0</span>)</span></h3>
           <div>
-            <button onclick="createBestLobby()" style="margin-right: 10px;">Create Best Lobby</button>
-            <button onclick="clearQueue()" class="danger">Clear Queue</button>
+            <button onclick="createBestLobby()" style="margin-right: 10px;" id="createLobbyBtn">Create Best Lobby</button>
+            <button onclick="clearQueue()" class="danger" id="clearQueueBtn">Clear Queue</button>
           </div>
         </div>
         <div class="queue-content" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')" ondragleave="clearHighlight(event)">
@@ -408,46 +409,63 @@
     </div>
 
     <div id="allPlayersPage" style="display: none;">
-      <h1>All Players</h1>
+      <h1 id="allPlayersTitle">All Players</h1>
       <div class="search-container">
         <input type="text" id="playerSearch" placeholder="Search player..." oninput="searchPlayer()">
       </div>
       <div class="filter-options">
-        <label><input type="checkbox" id="hideInLobby" checked onchange="updatePlayersList()"> Hide players in lobbies</label>
-        <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> Hide players in queue</label>
-        <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> Hide offline players</label>
-        <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> Show banned only</label>
-        <label><input type="checkbox" id="bhvFilter1" onchange="updatePlayersList()"> 0-5000 BHV</label>
-        <label><input type="checkbox" id="bhvFilter2" onchange="updatePlayersList()"> 5000-7500 BHV</label>
-        <label><input type="checkbox" id="bhvFilter3" onchange="updatePlayersList()"> 7500+ BHV</label>
+        <label><input type="checkbox" id="hideInLobby" checked onchange="updatePlayersList()"> <span id="hideInLobbyLabel">Hide players in lobbies</span></label>
+        <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> <span id="hideInQueueLabel">Hide players in queue</span></label>
+        <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> <span id="hideOfflineLabel">Hide offline players</span></label>
+        <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> <span id="showBannedLabel">Show banned only</span></label>
+        <label><input type="checkbox" id="bhvFilter1" onchange="updatePlayersList()"> <span id="bhvFilter1Label">0-5000 BHV</span></label>
+        <label><input type="checkbox" id="bhvFilter2" onchange="updatePlayersList()"> <span id="bhvFilter2Label">5000-7500 BHV</span></label>
+        <label><input type="checkbox" id="bhvFilter3" onchange="updatePlayersList()"> <span id="bhvFilter3Label">7500+ BHV</span></label>
       </div>
       <div class="sort-options">
-        <button class="sort-btn" onclick="sortPlayers('name', 'asc')">Name A-Z</button>
-        <button class="sort-btn" onclick="sortPlayers('name', 'desc')">Name Z-A</button>
-        <button class="sort-btn" onclick="sortPlayers('mmr', 'asc')">MMR Low-High</button>
-        <button class="sort-btn" onclick="sortPlayers('mmr', 'desc')">MMR High-Low</button>
-        <button class="sort-btn" onclick="sortPlayers('bhv', 'asc')">BHV Low-High</button>
-        <button class="sort-btn" onclick="sortPlayers('bhv', 'desc')">BHV High-Low</button>
+        <button class="sort-btn" onclick="sortPlayers('name', 'asc')" id="sortNameAsc">Name A-Z</button>
+        <button class="sort-btn" onclick="sortPlayers('name', 'desc')" id="sortNameDesc">Name Z-A</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'asc')" id="sortMmrAsc">MMR Low-High</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'desc')" id="sortMmrDesc">MMR High-Low</button>
+        <button class="sort-btn" onclick="sortPlayers('bhv', 'asc')" id="sortBhvAsc">BHV Low-High</button>
+        <button class="sort-btn" onclick="sortPlayers('bhv', 'desc')" id="sortBhvDesc">BHV High-Low</button>
       </div>
       <div class="player-list" id="allPlayersList">
         <div id="playersListContent"></div>
       </div>
-      <button onclick="showMainPage()">Back to Lobby</button>
+      <button onclick="showMainPage()" id="backToLobbyBtn">Back to Lobby</button>
     </div>
 
     <!-- Edit Modal -->
     <div class="modal" id="editModal">
       <div class="modal-content">
-        <h3>Edit Player</h3>
+        <h3 id="editPlayerTitle">Edit Player</h3>
         <input type="text" id="editName" placeholder="Nickname">
         <input type="number" id="editMMR" placeholder="MMR">
         <input type="number" id="editBHV" placeholder="BHV">
         <input type="text" id="editFriendId" placeholder="Friend ID">
         <textarea id="editNote" placeholder="Notes..." rows="3"></textarea>
         <div class="modal-buttons">
-          <button onclick="savePlayerChanges()">Save</button>
-          <button onclick="closeModal()">Cancel</button>
+          <button onclick="savePlayerChanges()" id="savePlayerBtn">Save</button>
+          <button onclick="closeModal()" id="cancelEditBtn">Cancel</button>
           <button id="banButton" class="danger" onclick="toggleBanPlayer()">Ban</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal-content">
+        <h3 id="settingsTitle">Settings</h3>
+        <div class="form-group">
+          <label id="languageLabel">Language:</label>
+          <select id="languageSelect" onchange="changeLanguage()">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="closeSettingsModal()" id="closeSettingsBtn">Close</button>
         </div>
       </div>
     </div>
@@ -464,10 +482,93 @@
     let currentLobby = 0;
     let currentlyEditedPlayer = null;
     let currentSort = { field: 'name', direction: 'asc' };
+    let currentLanguage = 'en';
     let bhvFilters = {
       '0-5000': false,
       '5000-7500': false,
       '7500-12000': false
+    };
+
+    // Translations
+    const translations = {
+      en: {
+        title: "Dota 2 Team Balancer",
+        nickname: "Nickname",
+        rating: "Rating (MMR)",
+        bhv: "BHV (0-12000)",
+        friendId: "Friend ID",
+        addToQueue: "Add to Queue",
+        moveAllToLobby: "Move All to Lobby",
+        clearLobby: "Clear Current Lobby",
+        team1: "Team 1",
+        team2: "Team 2",
+        balanceTeams: "Balance Teams",
+        globalQueue: "Global Queue",
+        createLobby: "Create Best Lobby",
+        clearQueue: "Clear Queue",
+        allPlayers: "All Players",
+        hideInLobby: "Hide players in lobbies",
+        hideInQueue: "Hide players in queue",
+        hideOffline: "Hide offline players",
+        showBanned: "Show banned only",
+        bhvFilter1: "0-5000 BHV",
+        bhvFilter2: "5000-7500 BHV",
+        bhvFilter3: "7500+ BHV",
+        backToLobby: "Back to Lobby",
+        editPlayer: "Edit Player",
+        save: "Save",
+        cancel: "Cancel",
+        ban: "Ban",
+        unban: "Unban",
+        settings: "Settings",
+        language: "Language:",
+        close: "Close",
+        sortNameAsc: "Name A-Z",
+        sortNameDesc: "Name Z-A",
+        sortMmrAsc: "MMR Low-High",
+        sortMmrDesc: "MMR High-Low",
+        sortBhvAsc: "BHV Low-High",
+        sortBhvDesc: "BHV High-Low"
+      },
+      ru: {
+        title: "Балансировщик команд Dota 2",
+        nickname: "Никнейм",
+        rating: "Рейтинг (MMR)",
+        bhv: "BHV (0-12000)",
+        friendId: "Friend ID",
+        addToQueue: "Добавить в очередь",
+        moveAllToLobby: "Переместить всех в лобби",
+        clearLobby: "Очистить текущее лобби",
+        team1: "Команда 1",
+        team2: "Команда 2",
+        balanceTeams: "Сбалансировать команды",
+        globalQueue: "Глобальная очередь",
+        createLobby: "Создать лучшее лобби",
+        clearQueue: "Очистить очередь",
+        allPlayers: "Все игроки",
+        hideInLobby: "Скрыть игроков в лобби",
+        hideInQueue: "Скрыть игроков в очереди",
+        hideOffline: "Скрыть оффлайн игроков",
+        showBanned: "Только забаненные",
+        bhvFilter1: "0-5000 BHV",
+        bhvFilter2: "5000-7500 BHV",
+        bhvFilter3: "7500+ BHV",
+        backToLobby: "Назад в лобби",
+        editPlayer: "Редактировать игрока",
+        save: "Сохранить",
+        cancel: "Отмена",
+        ban: "Забанить",
+        unban: "Разбанить",
+        settings: "Настройки",
+        language: "Язык:",
+        close: "Закрыть",
+        sortNameAsc: "Имя А-Я",
+        sortNameDesc: "Имя Я-А",
+        sortMmrAsc: "MMR Низ-Выс",
+        sortMmrDesc: "MMR Выс-Низ",
+        sortBhvAsc: "BHV Низ-Выс",
+        sortBhvDesc: "BHV Выс-Низ"
+      }
     };
 
     function switchLobby(index) {
@@ -569,7 +670,7 @@
       const bannedPlayer = allPlayers.find(p => (p.friendId && p.friendId === friendId && p.banned) || 
                      (p.name === name && p.banned));
       if (bannedPlayer) {
-        alert("This player is banned and cannot be added");
+        alert(currentLanguage === 'en' ? "This player is banned and cannot be added" : "Этот игрок забанен и не может быть добавлен");
         return;
       }
 
@@ -577,13 +678,13 @@
         lobby.team1.concat(lobby.team2).some(p => p.name === name)
       );
       if (alreadyInGame) {
-        alert("Player is already in one of the lobbies");
+        alert(currentLanguage === 'en' ? "Player is already in one of the lobbies" : "Игрок уже в одном из лобби");
         return;
       }
 
       const alreadyInQueue = globalQueue.some(p => p.name === name);
       if (alreadyInQueue) {
-        alert("Player is already in queue");
+        alert(currentLanguage === 'en' ? "Player is already in queue" : "Игрок уже в очереди");
         return;
       }
 
@@ -659,7 +760,7 @@
       
       // Check if player is banned
       if (player.banned) {
-        alert("Banned players cannot be added to teams or queue");
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to teams or queue" : "Забаненные игроки не могут быть добавлены в команды или очередь");
         globalQueue.push(player); // Return to queue
         renderLobby();
         ev.target.classList.remove('highlight');
@@ -689,14 +790,14 @@
         
         const actions = isQueue ? `
           <div class="queue-player-actions">
-            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\" ${p.banned ? 'disabled' : ''}>Team 1</button>
-            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\" ${p.banned ? 'disabled' : ''}>Team 2</button>
-            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
+            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 1' : 'Команда 1'}</button>
+            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 2' : 'Команда 2'}</button>
+            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
           </div>
         ` : `
           <div>
-            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
-            <button onclick=\"moveToQueue('${source}', ${index})\" ${p.banned ? 'disabled' : ''}>To Queue</button>
+            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
+            <button onclick=\"moveToQueue('${source}', ${index})\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'To Queue' : 'В очередь'}</button>
           </div>
         `;
         
@@ -758,7 +859,7 @@
       
       // Check if player is banned
       if (player.banned) {
-        alert("Banned players cannot be added to teams");
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to teams" : "Забаненные игроки не могут быть добавлены в команды");
         globalQueue.splice(index, 0, player); // Return to original position
         renderLobby();
         return;
@@ -855,7 +956,7 @@
 
     function createBestLobby() {
       if (globalQueue.length < 10) {
-        alert("Need at least 10 players in queue to create a 5v5 lobby");
+        alert(currentLanguage === 'en' ? "Need at least 10 players in queue to create a 5v5 lobby" : "Нужно минимум 10 игроков в очереди для создания лобби 5х5");
         return;
       }
 
@@ -866,7 +967,7 @@
         .slice(0, Math.min(20, globalQueue.length)); // Take top 20 MMR players
 
       if (candidates.length < 10) {
-        alert("Not enough unbanned players in queue to create a 5v5 lobby");
+        alert(currentLanguage === 'en' ? "Not enough unbanned players in queue to create a 5v5 lobby" : "Недостаточно незабаненных игроков для создания лобби 5х5");
         return;
       }
 
@@ -944,7 +1045,7 @@
     }
 
     function clearQueue() {
-      if (confirm("Clear the queue? All players will be removed.")) {
+      if (confirm(currentLanguage === 'en' ? "Clear the queue? All players will be removed." : "Очистить очередь? Все игроки будут удалены.")) {
         globalQueue = [];
         renderLobby();
         saveToLocalStorage();
@@ -1043,8 +1144,8 @@
           </div>
           <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
           <div class="player-actions">
-            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>Add to Queue</button>
-            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">Edit</button>
+            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Add to Queue' : 'В очередь'}</button>
+            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">${currentLanguage === 'en' ? 'Edit' : 'Ред.'}</button>
           </div>
         `;
         playerElement.ondblclick = () => {
@@ -1069,7 +1170,7 @@
       if (!player) return;
 
       if (player.banned) {
-        alert("Banned players cannot be added to queue");
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to queue" : "Забаненные игроки не могут быть добавлены в очередь");
         return;
       }
 
@@ -1077,13 +1178,13 @@
         lobby.team1.concat(lobby.team2).some(p => p.name === player.name)
       );
       if (alreadyInGame) {
-        alert("Player is already in one of the lobbies");
+        alert(currentLanguage === 'en' ? "Player is already in one of the lobbies" : "Игрок уже в одном из лобби");
         return;
       }
 
       const alreadyInQueue = globalQueue.some(p => p.name === player.name);
       if (alreadyInQueue) {
-        alert("Player is already in queue");
+        alert(currentLanguage === 'en' ? "Player is already in queue" : "Игрок уже в очереди");
         return;
       }
 
@@ -1121,10 +1222,10 @@
       
       const banButton = document.getElementById("banButton");
       if (player.banned) {
-        banButton.textContent = "Unban";
+        banButton.textContent = currentLanguage === 'en' ? "Unban" : "Разбанить";
         banButton.className = "success";
       } else {
-        banButton.textContent = "Ban";
+        banButton.textContent = currentLanguage === 'en' ? "Ban" : "Забанить";
         banButton.className = "danger";
       }
       
@@ -1175,7 +1276,7 @@
       const note = document.getElementById("editNote").value;
 
       if (!name || isNaN(mmr) || isNaN(bhv)) {
-        alert("Please fill all fields correctly!");
+        alert(currentLanguage === 'en' ? "Please fill all fields correctly!" : "Пожалуйста, заполните все поля правильно!");
         return;
       }
 
@@ -1186,7 +1287,7 @@
       if (friendId && friendId !== player.friendId) {
         const existingPlayer = allPlayers.find(p => p.friendId === friendId && p.name !== player.name);
         if (existingPlayer) {
-          alert("This Friend ID is already used by another player");
+          alert(currentLanguage === 'en' ? "This Friend ID is already used by another player" : "Этот Friend ID уже используется другим игроком");
           return;
         }
       }
@@ -1216,7 +1317,7 @@
     }
 
     function clearCurrentLobby() {
-      if (confirm("Clear the current lobby? All players will be moved to queue.")) {
+      if (confirm(currentLanguage === 'en' ? "Clear the current lobby? All players will be moved to queue." : "Очистить текущее лобби? Все игроки будут перемещены в очередь.")) {
         const lobby = lobbies[currentLobby];
         // Move only unbanned players to queue
         globalQueue.push(...lobby.team1.filter(p => !p.banned), ...lobby.team2.filter(p => !p.banned));
@@ -1227,11 +1328,95 @@
       }
     }
 
+    function openSettingsModal() {
+      document.getElementById("settingsModal").style.display = "flex";
+      document.getElementById("languageSelect").value = currentLanguage;
+    }
+
+    function closeSettingsModal() {
+      document.getElementById("settingsModal").style.display = "none";
+    }
+
+    function changeLanguage() {
+      currentLanguage = document.getElementById("languageSelect").value;
+      applyLanguage();
+      saveToLocalStorage();
+      closeSettingsModal();
+    }
+
+    function applyLanguage() {
+      const lang = translations[currentLanguage];
+      
+      // Main page
+      document.getElementById("mainTitle").textContent = lang.title;
+      document.getElementById("name").placeholder = lang.nickname;
+      document.getElementById("mmr").placeholder = lang.rating;
+      document.getElementById("bhv").placeholder = lang.bhv;
+      document.getElementById("friendId").placeholder = lang.friendId;
+      document.getElementById("addToQueueBtn").textContent = lang.addToQueue;
+      document.getElementById("moveAllBtn").textContent = lang.moveAllToLobby;
+      document.getElementById("clearLobbyBtn").textContent = lang.clearLobby;
+      document.getElementById("team1Title").innerHTML = `${lang.team1} <span class="team-count">(<span id="team1Count">0</span>/5)</span>`;
+      document.getElementById("team2Title").innerHTML = `${lang.team2} <span class="team-count">(<span id="team2Count">0</span>/5)</span>`;
+      document.getElementById("balanceBtn").textContent = lang.balanceTeams;
+      document.getElementById("queueTitle").innerHTML = `${lang.globalQueue} <span class="team-count">(<span id="queueCount">0</span>)</span>`;
+      document.getElementById("createLobbyBtn").textContent = lang.createLobby;
+      document.getElementById("clearQueueBtn").textContent = lang.clearQueue;
+      
+      // All players page
+      document.getElementById("allPlayersTitle").textContent = lang.allPlayers;
+      document.getElementById("playerSearch").placeholder = `${lang.nickname}...`;
+      document.getElementById("hideInLobbyLabel").textContent = lang.hideInLobby;
+      document.getElementById("hideInQueueLabel").textContent = lang.hideInQueue;
+      document.getElementById("hideOfflineLabel").textContent = lang.hideOffline;
+      document.getElementById("showBannedLabel").textContent = lang.showBanned;
+      document.getElementById("bhvFilter1Label").textContent = lang.bhvFilter1;
+      document.getElementById("bhvFilter2Label").textContent = lang.bhvFilter2;
+      document.getElementById("bhvFilter3Label").textContent = lang.bhvFilter3;
+      document.getElementById("sortNameAsc").textContent = lang.sortNameAsc;
+      document.getElementById("sortNameDesc").textContent = lang.sortNameDesc;
+      document.getElementById("sortMmrAsc").textContent = lang.sortMmrAsc;
+      document.getElementById("sortMmrDesc").textContent = lang.sortMmrDesc;
+      document.getElementById("sortBhvAsc").textContent = lang.sortBhvAsc;
+      document.getElementById("sortBhvDesc").textContent = lang.sortBhvDesc;
+      document.getElementById("backToLobbyBtn").textContent = lang.backToLobby;
+      
+      // Edit modal
+      document.getElementById("editPlayerTitle").textContent = lang.editPlayer;
+      document.getElementById("editName").placeholder = lang.nickname;
+      document.getElementById("savePlayerBtn").textContent = lang.save;
+      document.getElementById("cancelEditBtn").textContent = lang.cancel;
+      
+      // Settings modal
+      document.getElementById("settingsTitle").textContent = lang.settings;
+      document.getElementById("languageLabel").textContent = lang.language;
+      document.getElementById("closeSettingsBtn").textContent = lang.close;
+      
+      // Update ban button if modal is open
+      if (document.getElementById("editModal").style.display === "flex" && currentlyEditedPlayer) {
+        const banButton = document.getElementById("banButton");
+        if (currentlyEditedPlayer.player.banned) {
+          banButton.textContent = lang.unban;
+          banButton.className = "success";
+        } else {
+          banButton.textContent = lang.ban;
+          banButton.className = "danger";
+        }
+      }
+      
+      // Re-render UI to update language
+      renderLobby();
+      if (document.getElementById("allPlayersPage").style.display !== "none") {
+        updatePlayersList();
+      }
+    }
+
     function saveToLocalStorage() {
       localStorage.setItem('dotaBalancerData', JSON.stringify({
         lobbies,
         globalQueue,
-        allPlayers
+        allPlayers,
+        currentLanguage
       }));
     }
 
@@ -1260,6 +1445,10 @@
             index === self.findIndex(p => p.name === player.name)
           );
         }
+        if (parsedData.currentLanguage) {
+          currentLanguage = parsedData.currentLanguage;
+        }
+        applyLanguage();
         renderLobby();
       }
     }
