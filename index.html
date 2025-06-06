@@ -8,7 +8,7 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     .background {
       position: fixed;
@@ -30,7 +30,7 @@
       z-index: 2;
       max-width: 1000px;
       margin: 0 auto;
-      padding: 40px;
+      padding: 20px;
       color: white;
     }
     .form-group {
@@ -46,16 +46,25 @@
     button {
       padding: 10px 15px;
       cursor: pointer;
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #555;
     }
     .tabs {
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
     .tab {
       padding: 10px;
       background: rgba(255,255,255,0.2);
       cursor: pointer;
+      border-radius: 4px;
     }
     .active-tab {
       background: rgba(255,255,255,0.5);
@@ -79,8 +88,118 @@
     .red { background-color: #ff4d4d; }
     .yellow { background-color: #ffd11a; color: #000; }
     .green { background-color: #33cc33; }
-    .waiting-list {
+    .queue-container {
       margin-top: 30px;
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .queue-content {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    /* Новые стили */
+    .search-container {
+      margin: 15px 0;
+    }
+    #playerSearch {
+      width: 200px;
+      padding: 8px;
+    }
+    .player-list {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .player-list-item {
+      padding: 8px;
+      margin: 3px 0;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .player-list-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      max-width: 90%;
+    }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+    }
+    .modal-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .modal-buttons button {
+      padding: 8px 12px;
+    }
+    button.danger {
+      background-color: #ff4444;
+      color: white;
+    }
+    .team.highlight {
+      background: rgba(255, 255, 255, 0.3);
+      transition: background 0.2s;
+    }
+    .player-status {
+      font-size: 0.8em;
+      opacity: 0.8;
+      margin-left: 5px;
+    }
+    .status-queue { color: #aaa; }
+    .status-team1 { color: #ff4d4d; }
+    .status-team2 { color: #33cc33; }
+    .status-lobby1 { color: #4da6ff; }
+    .status-lobby2 { color: #ff9933; }
+    .status-lobby3 { color: #cc99ff; }
+    .filter-options {
+      margin: 10px 0;
+      display: flex;
+      gap: 15px;
+    }
+    .filter-options label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .form-group {
+        flex-direction: column;
+      }
+      .teams {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -92,44 +211,88 @@
       <div class="tab active-tab" onclick="switchLobby(0)">Lobby 1</div>
       <div class="tab" onclick="switchLobby(1)">Lobby 2</div>
       <div class="tab" onclick="switchLobby(2)">Lobby 3</div>
+      <div class="tab" onclick="showAllPlayersPage()">All Players</div>
     </div>
 
-    <h1>Dota 2 Team Balancer</h1>
-    <div class="form-group">
-      <input type="text" id="name" placeholder="Nickname">
-      <input type="number" id="mmr" placeholder="Rating (MMR)">
-      <input type="number" id="bhv" placeholder="BHV (0-12000)">
-      <button onclick="addToQueue()">Add to Queue</button>
-      <button onclick="moveAllToLobby()">Move All to Lobby</button>
-    </div>
-
-    <div class="teams">
-      <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')">
-        <h3>Team 1</h3>
-        <div id="team1Players"></div>
-        <p id="team1Stats"></p>
+    <div id="mainPage">
+      <h1>Dota 2 Team Balancer</h1>
+      <div class="form-group">
+        <input type="text" id="name" placeholder="Nickname">
+        <input type="number" id="mmr" placeholder="Rating (MMR)">
+        <input type="number" id="bhv" placeholder="BHV (0-12000)">
+        <button onclick="addToQueue()">Add to Queue</button>
+        <button onclick="moveAllToLobby()">Move All to Lobby</button>
+        <button onclick="clearCurrentLobby()" class="danger">Clear Current Lobby</button>
       </div>
-      <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')">
-        <h3>Team 2</h3>
-        <div id="team2Players"></div>
-        <p id="team2Stats"></p>
+
+      <div class="teams">
+        <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
+          <h3>Team 1</h3>
+          <div id="team1Players"></div>
+          <p id="team1Stats"></p>
+        </div>
+        <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
+          <h3>Team 2</h3>
+          <div id="team2Players"></div>
+          <p id="team2Stats"></p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <button onclick="balanceTeams()">Balance Teams</button>
+      </div>
+
+      <div class="queue-container">
+        <div class="queue-header">
+          <h3>Global Queue</h3>
+          <button onclick="clearQueue()" class="danger">Clear Queue</button>
+        </div>
+        <div class="queue-content" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')" ondragleave="clearHighlight(event)">
+          <!-- Queue content will be rendered here -->
+        </div>
       </div>
     </div>
 
-    <button onclick="balanceTeams()">Balance Teams</button>
+    <div id="allPlayersPage" style="display: none;">
+      <h1>All Players</h1>
+      <div class="search-container">
+        <input type="text" id="playerSearch" placeholder="Search player..." oninput="searchPlayer()">
+      </div>
+      <div class="filter-options">
+        <label><input type="checkbox" id="hideInLobby" checked onchange="updatePlayersList()"> Hide players in lobbies</label>
+        <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> Hide players in queue</label>
+      </div>
+      <div class="player-list" id="allPlayersList">
+        <div id="playersListContent"></div>
+      </div>
+      <button onclick="showMainPage()">Back to Lobby</button>
+    </div>
 
-    <div class="waiting-list" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')">
-      <h3>Waiting Queue</h3>
+    <!-- Модальное окно редактирования -->
+    <div class="modal" id="editModal">
+      <div class="modal-content">
+        <h3>Edit Player</h3>
+        <input type="text" id="editName" placeholder="Nickname">
+        <input type="number" id="editMMR" placeholder="MMR">
+        <input type="number" id="editBHV" placeholder="BHV">
+        <textarea id="editNote" placeholder="Notes..."></textarea>
+        <div class="modal-buttons">
+          <button onclick="savePlayerChanges()">Save</button>
+          <button onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const lobbies = [
-      { queue: [], team1: [], team2: [] },
-      { queue: [], team1: [], team2: [] },
-      { queue: [], team1: [], team2: [] }
+      { team1: [], team2: [] },
+      { team1: [], team2: [] },
+      { team1: [], team2: [] }
     ];
+    let globalQueue = [];
     let currentLobby = 0;
+    let currentlyEditedPlayer = null;
 
     function switchLobby(index) {
       currentLobby = index;
@@ -139,10 +302,47 @@
       renderLobby();
     }
 
+    function showAllPlayersPage() {
+      document.getElementById('mainPage').style.display = 'none';
+      document.getElementById('allPlayersPage').style.display = 'block';
+      updatePlayersList();
+    }
+
+    function showMainPage() {
+      document.getElementById('mainPage').style.display = 'block';
+      document.getElementById('allPlayersPage').style.display = 'none';
+      renderLobby();
+    }
+
     function getColor(bhv) {
       if (bhv < 5000) return 'red';
       if (bhv < 7500) return 'yellow';
       return 'green';
+    }
+
+    function getPlayerStatus(player) {
+      for (let i = 0; i < lobbies.length; i++) {
+        if (lobbies[i].team1.some(p => p.name === player.name)) {
+          return `Lobby ${i+1} Team 1`;
+        }
+        if (lobbies[i].team2.some(p => p.name === player.name)) {
+          return `Lobby ${i+1} Team 2`;
+        }
+      }
+      if (globalQueue.some(p => p.name === player.name)) {
+        return 'In Queue';
+      }
+      return 'Not in game';
+    }
+
+    function getStatusClass(status) {
+      if (status === 'In Queue') return 'status-queue';
+      if (status.includes('Team 1')) return 'status-team1';
+      if (status.includes('Team 2')) return 'status-team2';
+      if (status.includes('Lobby 1')) return 'status-lobby1';
+      if (status.includes('Lobby 2')) return 'status-lobby2';
+      if (status.includes('Lobby 3')) return 'status-lobby3';
+      return '';
     }
 
     function addToQueue() {
@@ -151,30 +351,43 @@
       const bhv = parseInt(document.getElementById('bhv').value);
       if (!name || isNaN(mmr) || isNaN(bhv)) return;
 
-      const alreadyInLobby = lobbies.some(lobby =>
+      const alreadyInGame = lobbies.some(lobby =>
         lobby.team1.concat(lobby.team2).some(p => p.name === name)
       );
-      if (alreadyInLobby) {
+      if (alreadyInGame) {
         alert("Player is already in one of the lobbies");
         return;
       }
 
-      lobbies[currentLobby].queue.unshift({ name, mmr, bhv });
+      const alreadyInQueue = globalQueue.some(p => p.name === name);
+      if (alreadyInQueue) {
+        alert("Player is already in queue");
+        return;
+      }
+
+      globalQueue.unshift({ name, mmr, bhv });
       renderLobby();
+      saveToLocalStorage();
     }
 
     function moveAllToLobby() {
       const lobby = lobbies[currentLobby];
-      const sorted = [...lobby.queue].sort((a, b) => a.bhv - b.bhv || a.mmr - b.mmr);
-      lobby.queue = [];
+      const sorted = [...globalQueue].sort((a, b) => a.bhv - b.bhv || a.mmr - b.mmr);
+      globalQueue = [];
       lobby.team1 = [];
       lobby.team2 = [];
       sorted.forEach((p, i) => (i % 2 === 0 ? lobby.team1 : lobby.team2).push(p));
       renderLobby();
+      saveToLocalStorage();
     }
 
     function allowDrop(ev) {
       ev.preventDefault();
+      ev.target.classList.add('highlight');
+    }
+
+    function clearHighlight(ev) {
+      ev.target.classList.remove('highlight');
     }
 
     function drag(ev, source, index) {
@@ -184,28 +397,43 @@
     function drop(ev, target) {
       ev.preventDefault();
       const data = JSON.parse(ev.dataTransfer.getData("text"));
-      const lobby = lobbies[currentLobby];
-      const player = lobby[data.source].splice(data.index, 1)[0];
-      lobby[target].push(player);
+      
+      let player;
+      if (data.source === 'queue') {
+        player = globalQueue.splice(data.index, 1)[0];
+      } else {
+        player = lobbies[currentLobby][data.source].splice(data.index, 1)[0];
+      }
+      
+      if (target === 'queue') {
+        globalQueue.push(player);
+      } else {
+        lobbies[currentLobby][target].push(player);
+      }
+      
       renderLobby();
+      saveToLocalStorage();
+      ev.target.classList.remove('highlight');
     }
 
     function renderLobby() {
-      function createPlayerElement(p, source, index) {
+      function createPlayerElement(p, source, index, isQueue = false) {
         const el = document.createElement('div');
         el.className = `player ${getColor(p.bhv)}`;
         el.draggable = true;
         el.ondragstart = (e) => drag(e, source, index);
+        el.ondblclick = () => openEditModal(p, { source, index, isQueue });
         el.innerHTML = `
           <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv}</div>
           <div>
-            <button onclick=\"kickPlayer('${source}', ${index})\">Выгнать</button>
-            <button onclick=\"moveToQueue('${source}', ${index})\">В очередь</button>
+            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
+            ${!isQueue ? `<button onclick=\"moveToQueue('${source}', ${index})\">To Queue</button>` : ''}
           </div>`;
         return el;
       }
       const lobby = lobbies[currentLobby];
 
+      // Render teams
       ["team1", "team2"].forEach(team => {
         const div = document.getElementById(`${team}Players`);
         div.innerHTML = '';
@@ -220,30 +448,241 @@
         document.getElementById(`${team}Stats`).innerText = `Avg MMR: ${avgMMR} | Avg BHV: ${avgHonor}`;
       });
 
+      // Render queue
       const queueDiv = document.getElementById('waitingList');
-      queueDiv.innerHTML = '<h3>Waiting Queue</h3>';
-      lobby.queue.forEach((p, i) => {
-        const el = createPlayerElement(p, 'queue', i);
+      queueDiv.innerHTML = '';
+      globalQueue.forEach((p, i) => {
+        const el = createPlayerElement(p, 'queue', i, true);
         queueDiv.appendChild(el);
       });
     }
 
     function balanceTeams() {
-      moveAllToLobby();
+      const lobby = lobbies[currentLobby];
+      const players = [...globalQueue, ...lobby.team1, ...lobby.team2];
+      players.sort((a, b) => b.mmr - a.mmr);
+
+      globalQueue = [];
+      lobby.team1 = [];
+      lobby.team2 = [];
+
+      let team1MMR = 0, team2MMR = 0;
+      players.forEach((player, i) => {
+        if (team1MMR <= team2MMR) {
+          lobby.team1.push(player);
+          team1MMR += player.mmr;
+        } else {
+          lobby.team2.push(player);
+          team2MMR += player.mmr;
+        }
+      });
+
+      renderLobby();
+      saveToLocalStorage();
     }
 
-    function kickPlayer(source, index) {
-      lobbies[currentLobby][source].splice(index, 1);
+    function kickPlayer(source, index, isQueue = false) {
+      if (isQueue) {
+        globalQueue.splice(index, 1);
+      } else {
+        lobbies[currentLobby][source].splice(index, 1);
+      }
       renderLobby();
+      saveToLocalStorage();
     }
 
     function moveToQueue(source, index) {
       const player = lobbies[currentLobby][source].splice(index, 1)[0];
-      lobbies[currentLobby].queue.push(player);
+      globalQueue.push(player);
       renderLobby();
+      saveToLocalStorage();
     }
 
-    window.onload = renderLobby;
+    function clearQueue() {
+      if (confirm("Clear the queue? All players will be removed.")) {
+        globalQueue = [];
+        renderLobby();
+        saveToLocalStorage();
+      }
+    }
+
+    function searchPlayer() {
+      updatePlayersList(document.getElementById("playerSearch").value.toLowerCase());
+    }
+
+    function updatePlayersList(filter = "") {
+      // Get all players from all lobbies and queue
+      const allPlayers = [];
+      
+      // Add players from queue
+      globalQueue.forEach(player => {
+        allPlayers.push({
+          ...player,
+          status: 'In Queue',
+          isInQueue: true,
+          isInLobby: false
+        });
+      });
+      
+      // Add players from lobbies
+      lobbies.forEach((lobby, lobbyIndex) => {
+        lobby.team1.forEach(player => {
+          allPlayers.push({
+            ...player,
+            status: `Lobby ${lobbyIndex+1} Team 1`,
+            isInQueue: false,
+            isInLobby: true,
+            lobbyIndex
+          });
+        });
+        lobby.team2.forEach(player => {
+          allPlayers.push({
+            ...player,
+            status: `Lobby ${lobbyIndex+1} Team 2`,
+            isInQueue: false,
+            isInLobby: true,
+            lobbyIndex
+          });
+        });
+      });
+
+      const listElement = document.getElementById("playersListContent");
+      listElement.innerHTML = "";
+
+      // Apply filters
+      const hideInLobby = document.getElementById("hideInLobby").checked;
+      const hideInQueue = document.getElementById("hideInQueue").checked;
+      
+      const filteredPlayers = allPlayers.filter(player => {
+        if (hideInLobby && player.isInLobby) return false;
+        if (hideInQueue && player.isInQueue) return false;
+        if (filter && !player.name.toLowerCase().includes(filter)) return false;
+        return true;
+      });
+
+      // Sort by name for easier searching
+      filteredPlayers.sort((a, b) => a.name.localeCompare(b.name));
+
+      filteredPlayers.forEach((player) => {
+        const status = player.status;
+        const statusClass = getStatusClass(status);
+        
+        const playerElement = document.createElement("div");
+        playerElement.className = `player-list-item ${getColor(player.bhv)}`;
+        playerElement.innerHTML = `
+          <div>
+            ${player.name} 
+            <span class="player-status ${statusClass}">(${status})</span>
+          </div>
+          <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
+        `;
+        playerElement.ondblclick = () => {
+          // Switch to the lobby where the player is located if in lobby
+          if (player.lobbyIndex !== undefined && player.lobbyIndex !== currentLobby) {
+            switchLobby(player.lobbyIndex);
+            showMainPage();
+          }
+          openEditModal(player, findPlayerLocation(player));
+        };
+        listElement.appendChild(playerElement);
+      });
+    }
+
+    function findPlayerLocation(player) {
+      // Check if player is in queue
+      const queueIndex = globalQueue.findIndex(p => p.name === player.name);
+      if (queueIndex !== -1) {
+        return { source: 'queue', index: queueIndex, isQueue: true };
+      }
+      
+      // Check if player is in any lobby
+      for (let i = 0; i < lobbies.length; i++) {
+        const lobby = lobbies[i];
+        for (const [source, players] of Object.entries(lobby)) {
+          const index = players.findIndex(p => p.name === player.name);
+          if (index !== -1) return { source, index, lobbyIndex: i };
+        }
+      }
+      return null;
+    }
+
+    function openEditModal(player, location) {
+      currentlyEditedPlayer = { player, location };
+      document.getElementById("editName").value = player.name;
+      document.getElementById("editMMR").value = player.mmr;
+      document.getElementById("editBHV").value = player.bhv;
+      document.getElementById("editNote").value = player.note || "";
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    function savePlayerChanges() {
+      const name = document.getElementById("editName").value;
+      const mmr = parseInt(document.getElementById("editMMR").value);
+      const bhv = parseInt(document.getElementById("editBHV").value);
+      const note = document.getElementById("editNote").value;
+
+      if (!name || isNaN(mmr) || isNaN(bhv)) {
+        alert("Please fill all fields correctly!");
+        return;
+      }
+
+      const { player, location } = currentlyEditedPlayer;
+      if (!location) return;
+
+      // Update player data in all locations
+      player.name = name;
+      player.mmr = mmr;
+      player.bhv = bhv;
+      player.note = note;
+
+      closeModal();
+      renderLobby();
+      updatePlayersList();
+      saveToLocalStorage();
+    }
+
+    function clearCurrentLobby() {
+      if (confirm("Clear the current lobby? All players will be moved to queue.")) {
+        const lobby = lobbies[currentLobby];
+        globalQueue.push(...lobby.team1, ...lobby.team2);
+        lobby.team1 = [];
+        lobby.team2 = [];
+        renderLobby();
+        saveToLocalStorage();
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('dotaBalancerData', JSON.stringify({
+        lobbies,
+        globalQueue
+      }));
+    }
+
+    function loadFromLocalStorage() {
+      const savedData = localStorage.getItem('dotaBalancerData');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.lobbies) {
+          parsedData.lobbies.forEach((lobby, index) => {
+            lobbies[index] = lobby;
+          });
+        }
+        if (parsedData.globalQueue) {
+          globalQueue = parsedData.globalQueue;
+        }
+        renderLobby();
+      }
+    }
+
+    window.onload = () => {
+      loadFromLocalStorage();
+      renderLobby();
+    };
   </script>
 </body>
 </html>
