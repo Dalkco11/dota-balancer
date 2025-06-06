@@ -193,6 +193,14 @@
       gap: 5px;
       cursor: pointer;
     }
+    .queue-player-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .team-count {
+      font-size: 0.8em;
+      opacity: 0.8;
+    }
     @media (max-width: 768px) {
       .form-group {
         flex-direction: column;
@@ -227,12 +235,12 @@
 
       <div class="teams">
         <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
-          <h3>Team 1</h3>
+          <h3>Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
           <div id="team1Players"></div>
           <p id="team1Stats"></p>
         </div>
         <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
-          <h3>Team 2</h3>
+          <h3>Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
           <div id="team2Players"></div>
           <p id="team2Stats"></p>
         </div>
@@ -368,6 +376,11 @@
       globalQueue.unshift({ name, mmr, bhv });
       renderLobby();
       saveToLocalStorage();
+      
+      // Clear input fields
+      document.getElementById('name').value = '';
+      document.getElementById('mmr').value = '';
+      document.getElementById('bhv').value = '';
     }
 
     function moveAllToLobby() {
@@ -376,7 +389,19 @@
       globalQueue = [];
       lobby.team1 = [];
       lobby.team2 = [];
-      sorted.forEach((p, i) => (i % 2 === 0 ? lobby.team1 : lobby.team2).push(p));
+      
+      // Distribute players with behavior score priority
+      sorted.forEach((p, i) => {
+        if (i % 2 === 0 && lobby.team1.length < 5) {
+          lobby.team1.push(p);
+        } else if (lobby.team2.length < 5) {
+          lobby.team2.push(p);
+        } else {
+          // If teams are full, keep in queue
+          globalQueue.push(p);
+        }
+      });
+      
       renderLobby();
       saveToLocalStorage();
     }
@@ -397,6 +422,13 @@
     function drop(ev, target) {
       ev.preventDefault();
       const data = JSON.parse(ev.dataTransfer.getData("text"));
+      
+      // Check if target team is full
+      if (target !== 'queue' && lobbies[currentLobby][target].length >= 5) {
+        alert("Team is already full (max 5 players)");
+        ev.target.classList.remove('highlight');
+        return;
+      }
       
       let player;
       if (data.source === 'queue') {
@@ -423,14 +455,27 @@
         el.draggable = true;
         el.ondragstart = (e) => drag(e, source, index);
         el.ondblclick = () => openEditModal(p, { source, index, isQueue });
-        el.innerHTML = `
-          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv}</div>
+        
+        const actions = isQueue ? `
+          <div class="queue-player-actions">
+            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\">Team 1</button>
+            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\">Team 2</button>
+            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
+          </div>
+        ` : `
           <div>
             <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
-            ${!isQueue ? `<button onclick=\"moveToQueue('${source}', ${index})\">To Queue</button>` : ''}
-          </div>`;
+            <button onclick=\"moveToQueue('${source}', ${index})\">To Queue</button>
+          </div>
+        `;
+        
+        el.innerHTML = `
+          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv}</div>
+          ${actions}
+        `;
         return el;
       }
+      
       const lobby = lobbies[currentLobby];
 
       // Render teams
@@ -441,6 +486,9 @@
           const el = createPlayerElement(p, team, i);
           div.appendChild(el);
         });
+
+        // Update team count
+        document.getElementById(`${team}Count`).textContent = lobby[team].length;
 
         const avg = arr => arr.reduce((sum, x) => sum + x, 0) / arr.length || 0;
         const avgMMR = avg(lobby[team].map(p => p.mmr)).toFixed(1);
@@ -457,26 +505,72 @@
       });
     }
 
+    function addToTeam(source, index, targetTeam) {
+      if (source !== 'queue') return;
+      
+      const lobby = lobbies[currentLobby];
+      if (lobby[targetTeam].length >= 5) {
+        alert("Team is already full (max 5 players)");
+        return;
+      }
+      
+      const player = globalQueue.splice(index, 1)[0];
+      lobby[targetTeam].push(player);
+      renderLobby();
+      saveToLocalStorage();
+    }
+
     function balanceTeams() {
       const lobby = lobbies[currentLobby];
-      const players = [...globalQueue, ...lobby.team1, ...lobby.team2];
-      players.sort((a, b) => b.mmr - a.mmr);
-
-      globalQueue = [];
+      
+      // Combine all players from both teams
+      const players = [...lobby.team1, ...lobby.team2];
+      
+      // Sort by behavior score first, then MMR
+      players.sort((a, b) => {
+        if (a.bhv !== b.bhv) return a.bhv - b.bhv; // Lower BHV first
+        return b.mmr - a.mmr; // Higher MMR first
+      });
+      
+      // Reset teams
       lobby.team1 = [];
       lobby.team2 = [];
-
-      let team1MMR = 0, team2MMR = 0;
-      players.forEach((player, i) => {
-        if (team1MMR <= team2MMR) {
+      
+      // Distribute players with behavior score priority
+      let team1Red = 0, team1Yellow = 0, team1Green = 0;
+      let team2Red = 0, team2Yellow = 0, team2Green = 0;
+      
+      players.forEach(player => {
+        const color = getColor(player.bhv);
+        let shouldAddToTeam1 = false;
+        
+        // Check behavior score distribution
+        if (color === 'red') {
+          shouldAddToTeam1 = team1Red <= team2Red;
+        } else if (color === 'yellow') {
+          shouldAddToTeam1 = team1Yellow <= team2Yellow;
+        } else {
+          shouldAddToTeam1 = team1Green <= team2Green;
+        }
+        
+        // Check team sizes
+        if (shouldAddToTeam1 && lobby.team1.length >= 5) shouldAddToTeam1 = false;
+        if (!shouldAddToTeam1 && lobby.team2.length >= 5) shouldAddToTeam1 = true;
+        
+        // Add to team
+        if (shouldAddToTeam1) {
           lobby.team1.push(player);
-          team1MMR += player.mmr;
+          if (color === 'red') team1Red++;
+          else if (color === 'yellow') team1Yellow++;
+          else team1Green++;
         } else {
           lobby.team2.push(player);
-          team2MMR += player.mmr;
+          if (color === 'red') team2Red++;
+          else if (color === 'yellow') team2Yellow++;
+          else team2Green++;
         }
       });
-
+      
       renderLobby();
       saveToLocalStorage();
     }
