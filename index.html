@@ -247,22 +247,6 @@
       cursor: pointer;
       font-size: 0.95em;
     }
-    .bhv-filter-group {
-      display: flex;
-      gap: 10px;
-      margin: 10px 0;
-      flex-wrap: wrap;
-    }
-    .bhv-filter {
-      background: rgba(255,255,255,0.1);
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .bhv-filter.active {
-      background: #4299e1;
-    }
     .queue-player-actions {
       display: flex;
       gap: 8px;
@@ -433,11 +417,9 @@
         <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> Hide players in queue</label>
         <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> Hide offline players</label>
         <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> Show banned only</label>
-      </div>
-      <div class="bhv-filter-group">
-        <div class="bhv-filter" onclick="toggleBHVFilter('0-5000')">0-5000 BHV</div>
-        <div class="bhv-filter" onclick="toggleBHVFilter('5000-7500')">5000-7500 BHV</div>
-        <div class="bhv-filter" onclick="toggleBHVFilter('7500-12000')">7500+ BHV</div>
+        <label><input type="checkbox" id="bhvFilter1" onchange="updatePlayersList()"> 0-5000 BHV</label>
+        <label><input type="checkbox" id="bhvFilter2" onchange="updatePlayersList()"> 5000-7500 BHV</label>
+        <label><input type="checkbox" id="bhvFilter3" onchange="updatePlayersList()"> 7500+ BHV</label>
       </div>
       <div class="sort-options">
         <button class="sort-btn" onclick="sortPlayers('name', 'asc')">Name A-Z</button>
@@ -446,8 +428,6 @@
         <button class="sort-btn" onclick="sortPlayers('mmr', 'desc')">MMR High-Low</button>
         <button class="sort-btn" onclick="sortPlayers('bhv', 'asc')">BHV Low-High</button>
         <button class="sort-btn" onclick="sortPlayers('bhv', 'desc')">BHV High-Low</button>
-        <button class="sort-btn" onclick="sortPlayers('lastSeen', 'desc')">Newest First</button>
-        <button class="sort-btn" onclick="sortPlayers('lastSeen', 'asc')">Oldest First</button>
       </div>
       <div class="player-list" id="allPlayersList">
         <div id="playersListContent"></div>
@@ -975,16 +955,6 @@
       updatePlayersList(document.getElementById("playerSearch").value.toLowerCase());
     }
 
-    function toggleBHVFilter(range) {
-      bhvFilters[range] = !bhvFilters[range];
-      document.querySelectorAll('.bhv-filter').forEach(el => {
-        if (el.textContent.includes(range)) {
-          el.classList.toggle('active', bhvFilters[range]);
-        }
-      });
-      updatePlayersList();
-    }
-
     function sortPlayers(field, direction) {
       currentSort = { field, direction };
       updatePlayersList();
@@ -992,20 +962,15 @@
       // Update active sort button
       document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.classList.remove('active');
-      });
-      
-      // Find and activate the clicked button
-      const buttons = document.querySelectorAll('.sort-btn');
-      for (let btn of buttons) {
         if (btn.textContent.includes(field === 'name' ? 'Name' : 
                                      field === 'mmr' ? 'MMR' : 
-                                     field === 'bhv' ? 'BHV' : 'Newest') && 
-            btn.textContent.includes(direction === 'asc' ? 'Low-High' : 
-                                    direction === 'desc' ? 'High-Low' : '')) {
+                                     field === 'bhv' ? 'BHV' : '') &&
+            btn.textContent.includes(direction === 'asc' ? 'A-Z' : 
+                                    direction === 'asc' ? 'Low-High' : 
+                                    direction === 'desc' ? 'Z-A' : 'High-Low')) {
           btn.classList.add('active');
-          break;
         }
-      }
+      });
     }
 
     function updatePlayersList(filter = "") {
@@ -1017,6 +982,9 @@
       const hideInQueue = document.getElementById("hideInQueue").checked;
       const hideOffline = document.getElementById("hideOffline").checked;
       const showBannedOnly = document.getElementById("showBannedOnly").checked;
+      const bhvFilter1 = document.getElementById("bhvFilter1").checked;
+      const bhvFilter2 = document.getElementById("bhvFilter2").checked;
+      const bhvFilter3 = document.getElementById("bhvFilter3").checked;
       
       let filteredPlayers = allPlayers.filter(player => {
         const inLobby = lobbies.some(l => l.team1.concat(l.team2).some(p => p.name === player.name));
@@ -1024,13 +992,12 @@
         const isOnline = inLobby || inQueue;
         
         // Apply BHV filters if any are active
-        const anyBHVFilterActive = Object.values(bhvFilters).some(v => v);
-        if (anyBHVFilterActive) {
+        if (bhvFilter1 || bhvFilter2 || bhvFilter3) {
           const bhv = player.bhv;
           const matchesFilter = 
-            (bhvFilters['0-5000'] && bhv >= 0 && bhv < 5000) ||
-            (bhvFilters['5000-7500'] && bhv >= 5000 && bhv < 7500) ||
-            (bhvFilters['7500-12000'] && bhv >= 7500);
+            (bhvFilter1 && bhv >= 0 && bhv < 5000) ||
+            (bhvFilter2 && bhv >= 5000 && bhv < 7500) ||
+            (bhvFilter3 && bhv >= 7500);
           
           if (!matchesFilter) return false;
         }
