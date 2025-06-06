@@ -104,7 +104,6 @@
       max-height: 300px;
       overflow-y: auto;
     }
-    /* Новые стили */
     .search-container {
       margin: 15px 0;
     }
@@ -201,11 +200,40 @@
       font-size: 0.8em;
       opacity: 0.8;
     }
+    .suggestions {
+      position: absolute;
+      background: #333;
+      border: 1px solid #444;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      width: calc(100% - 16px);
+      max-width: 300px;
+    }
+    .suggestion-item {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .suggestion-item:hover {
+      background: #444;
+    }
+    .team-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+    .team-stat {
+      margin-right: 10px;
+    }
     @media (max-width: 768px) {
       .form-group {
         flex-direction: column;
       }
       .teams {
+        flex-direction: column;
+      }
+      .team-stats {
         flex-direction: column;
       }
     }
@@ -225,7 +253,10 @@
     <div id="mainPage">
       <h1>Dota 2 Team Balancer</h1>
       <div class="form-group">
-        <input type="text" id="name" placeholder="Nickname">
+        <div style="position: relative;">
+          <input type="text" id="name" placeholder="Nickname" oninput="showPlayerSuggestions()">
+          <div class="suggestions" id="playerSuggestions" style="display: none;"></div>
+        </div>
         <input type="number" id="mmr" placeholder="Rating (MMR)">
         <input type="number" id="bhv" placeholder="BHV (0-12000)">
         <button onclick="addToQueue()">Add to Queue</button>
@@ -299,6 +330,7 @@
       { team1: [], team2: [] }
     ];
     let globalQueue = [];
+    let allPlayers = []; // Все игроки, которые когда-либо были добавлены
     let currentLobby = 0;
     let currentlyEditedPlayer = null;
 
@@ -353,6 +385,41 @@
       return '';
     }
 
+    function showPlayerSuggestions() {
+      const input = document.getElementById('name').value.toLowerCase();
+      if (!input) {
+        document.getElementById('playerSuggestions').style.display = 'none';
+        return;
+      }
+
+      const suggestions = allPlayers
+        .filter(p => p.name.toLowerCase().includes(input) && !globalQueue.some(q => q.name === p.name) && !lobbies.some(l => l.team1.concat(l.team2).some(t => t.name === p.name)))
+        .slice(0, 5);
+
+      const suggestionsDiv = document.getElementById('playerSuggestions');
+      suggestionsDiv.innerHTML = '';
+      
+      if (suggestions.length === 0) {
+        suggestionsDiv.style.display = 'none';
+        return;
+      }
+
+      suggestions.forEach(player => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.textContent = `${player.name} (MMR: ${player.mmr}, BHV: ${player.bhv})`;
+        div.onclick = () => {
+          document.getElementById('name').value = player.name;
+          document.getElementById('mmr').value = player.mmr;
+          document.getElementById('bhv').value = player.bhv;
+          suggestionsDiv.style.display = 'none';
+        };
+        suggestionsDiv.appendChild(div);
+      });
+
+      suggestionsDiv.style.display = 'block';
+    }
+
     function addToQueue() {
       const name = document.getElementById('name').value;
       const mmr = parseInt(document.getElementById('mmr').value);
@@ -373,7 +440,14 @@
         return;
       }
 
-      globalQueue.unshift({ name, mmr, bhv });
+      const player = { name, mmr, bhv };
+      globalQueue.unshift(player);
+      
+      // Добавляем в общий список игроков, если его там нет
+      if (!allPlayers.some(p => p.name === name)) {
+        allPlayers.push(player);
+      }
+
       renderLobby();
       saveToLocalStorage();
       
@@ -381,16 +455,17 @@
       document.getElementById('name').value = '';
       document.getElementById('mmr').value = '';
       document.getElementById('bhv').value = '';
+      document.getElementById('playerSuggestions').style.display = 'none';
     }
 
     function moveAllToLobby() {
       const lobby = lobbies[currentLobby];
-      const sorted = [...globalQueue].sort((a, b) => a.bhv - b.bhv || a.mmr - b.mmr);
+      const sorted = [...globalQueue].sort((a, b) => a.mmr - b.mmr);
       globalQueue = [];
       lobby.team1 = [];
       lobby.team2 = [];
       
-      // Distribute players with behavior score priority
+      // Distribute players with MMR priority
       sorted.forEach((p, i) => {
         if (i % 2 === 0 && lobby.team1.length < 5) {
           lobby.team1.push(p);
@@ -490,10 +565,21 @@
         // Update team count
         document.getElementById(`${team}Count`).textContent = lobby[team].length;
 
-        const avg = arr => arr.reduce((sum, x) => sum + x, 0) / arr.length || 0;
-        const avgMMR = avg(lobby[team].map(p => p.mmr)).toFixed(1);
-        const avgHonor = avg(lobby[team].map(p => p.bhv)).toFixed(1);
-        document.getElementById(`${team}Stats`).innerText = `Avg MMR: ${avgMMR} | Avg BHV: ${avgHonor}`;
+        const sum = arr => arr.reduce((sum, x) => sum + x, 0);
+        const sumMMR = sum(lobby[team].map(p => p.mmr));
+        const sumBHV = sum(lobby[team].map(p => p.bhv));
+        const avgMMR = (sumMMR / lobby[team].length || 0).toFixed(1);
+        const avgBHV = (sumBHV / lobby[team].length || 0).toFixed(1);
+        
+        const statsDiv = document.getElementById(`${team}Stats`);
+        statsDiv.innerHTML = `
+          <div class="team-stats">
+            <span class="team-stat">Avg MMR: ${avgMMR}</span>
+            <span class="team-stat">Avg BHV: ${avgBHV}</span>
+            <span class="team-stat">Sum MMR: ${sumMMR}</span>
+            <span class="team-stat">Sum BHV: ${sumBHV}</span>
+          </div>
+        `;
       });
 
       // Render queue
@@ -524,55 +610,92 @@
       const lobby = lobbies[currentLobby];
       
       // Combine all players from both teams
-      const players = [...lobby.team1, ...lobby.team2];
-      
-      // Sort by behavior score first, then MMR
-      players.sort((a, b) => {
-        if (a.bhv !== b.bhv) return a.bhv - b.bhv; // Lower BHV first
-        return b.mmr - a.mmr; // Higher MMR first
-      });
+      let players = [...lobby.team1, ...lobby.team2];
       
       // Reset teams
       lobby.team1 = [];
       lobby.team2 = [];
       
-      // Distribute players with behavior score priority
-      let team1Red = 0, team1Yellow = 0, team1Green = 0;
-      let team2Red = 0, team2Yellow = 0, team2Green = 0;
-      
-      players.forEach(player => {
-        const color = getColor(player.bhv);
-        let shouldAddToTeam1 = false;
-        
-        // Check behavior score distribution
-        if (color === 'red') {
-          shouldAddToTeam1 = team1Red <= team2Red;
-        } else if (color === 'yellow') {
-          shouldAddToTeam1 = team1Yellow <= team2Yellow;
-        } else {
-          shouldAddToTeam1 = team1Green <= team2Green;
-        }
-        
-        // Check team sizes
-        if (shouldAddToTeam1 && lobby.team1.length >= 5) shouldAddToTeam1 = false;
-        if (!shouldAddToTeam1 && lobby.team2.length >= 5) shouldAddToTeam1 = true;
-        
-        // Add to team
-        if (shouldAddToTeam1) {
-          lobby.team1.push(player);
-          if (color === 'red') team1Red++;
-          else if (color === 'yellow') team1Yellow++;
-          else team1Green++;
-        } else {
-          lobby.team2.push(player);
-          if (color === 'red') team2Red++;
-          else if (color === 'yellow') team2Yellow++;
-          else team2Green++;
-        }
+      // Sort by BHV first (ascending - чтобы равномерно распределить плохих игроков)
+      // Then by MMR (descending - чтобы сильные игроки распределялись первыми)
+      players.sort((a, b) => {
+        if (a.bhv !== b.bhv) return a.bhv - b.bhv;
+        return b.mmr - a.mmr;
       });
+      
+      // Try multiple balancing attempts to find the best distribution
+      let bestDiff = Infinity;
+      let bestTeam1 = [];
+      let bestTeam2 = [];
+      
+      // Several attempts to find optimal balance
+      for (let attempt = 0; attempt < 10; attempt++) {
+        // Shuffle players slightly for different attempts
+        if (attempt > 0) {
+          players = shuffleArray(players);
+        }
+        
+        const team1 = [];
+        const team2 = [];
+        let team1BHV = 0, team2BHV = 0;
+        let team1MMR = 0, team2MMR = 0;
+        
+        // Distribute players
+        for (const player of players) {
+          // Calculate potential new totals
+          const newTeam1BHV = team1BHV + player.bhv;
+          const newTeam2BHV = team2BHV + player.bhv;
+          const newTeam1MMR = team1MMR + player.mmr;
+          const newTeam2MMR = team2MMR + player.mmr;
+          
+          // Calculate differences for both options
+          const diffIfTeam1 = Math.abs(newTeam1BHV - team2BHV) + Math.abs(newTeam1MMR - team2MMR) * 0.5;
+          const diffIfTeam2 = Math.abs(team1BHV - newTeam2BHV) + Math.abs(team1MMR - newTeam2MMR) * 0.5;
+          
+          // Choose the option that minimizes both BHV and MMR differences
+          if (diffIfTeam1 < diffIfTeam2 && team1.length < 5) {
+            team1.push(player);
+            team1BHV = newTeam1BHV;
+            team1MMR = newTeam1MMR;
+          } else if (team2.length < 5) {
+            team2.push(player);
+            team2BHV = newTeam2BHV;
+            team2MMR = newTeam2MMR;
+          } else if (team1.length < 5) {
+            team1.push(player);
+            team1BHV = newTeam1BHV;
+            team1MMR = newTeam1MMR;
+          }
+        }
+        
+        // Calculate total difference for this attempt
+        const bhvDiff = Math.abs(team1BHV - team2BHV);
+        const mmrDiff = Math.abs(team1MMR - team2MMR);
+        const totalDiff = bhvDiff + mmrDiff * 0.5; // Give more weight to BHV
+        
+        // Keep this distribution if it's better
+        if (totalDiff < bestDiff) {
+          bestDiff = totalDiff;
+          bestTeam1 = [...team1];
+          bestTeam2 = [...team2];
+        }
+      }
+      
+      // Apply the best found distribution
+      lobby.team1 = bestTeam1;
+      lobby.team2 = bestTeam2;
       
       renderLobby();
       saveToLocalStorage();
+    }
+
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
     }
 
     function kickPlayer(source, index, isQueue = false) {
@@ -605,41 +728,6 @@
     }
 
     function updatePlayersList(filter = "") {
-      // Get all players from all lobbies and queue
-      const allPlayers = [];
-      
-      // Add players from queue
-      globalQueue.forEach(player => {
-        allPlayers.push({
-          ...player,
-          status: 'In Queue',
-          isInQueue: true,
-          isInLobby: false
-        });
-      });
-      
-      // Add players from lobbies
-      lobbies.forEach((lobby, lobbyIndex) => {
-        lobby.team1.forEach(player => {
-          allPlayers.push({
-            ...player,
-            status: `Lobby ${lobbyIndex+1} Team 1`,
-            isInQueue: false,
-            isInLobby: true,
-            lobbyIndex
-          });
-        });
-        lobby.team2.forEach(player => {
-          allPlayers.push({
-            ...player,
-            status: `Lobby ${lobbyIndex+1} Team 2`,
-            isInQueue: false,
-            isInLobby: true,
-            lobbyIndex
-          });
-        });
-      });
-
       const listElement = document.getElementById("playersListContent");
       listElement.innerHTML = "";
 
@@ -648,8 +736,11 @@
       const hideInQueue = document.getElementById("hideInQueue").checked;
       
       const filteredPlayers = allPlayers.filter(player => {
-        if (hideInLobby && player.isInLobby) return false;
-        if (hideInQueue && player.isInQueue) return false;
+        const inLobby = lobbies.some(l => l.team1.concat(l.team2).some(p => p.name === player.name));
+        const inQueue = globalQueue.some(p => p.name === player.name);
+        
+        if (hideInLobby && inLobby) return false;
+        if (hideInQueue && inQueue) return false;
         if (filter && !player.name.toLowerCase().includes(filter)) return false;
         return true;
       });
@@ -658,7 +749,7 @@
       filteredPlayers.sort((a, b) => a.name.localeCompare(b.name));
 
       filteredPlayers.forEach((player) => {
-        const status = player.status;
+        const status = getPlayerStatus(player);
         const statusClass = getStatusClass(status);
         
         const playerElement = document.createElement("div");
@@ -669,17 +760,49 @@
             <span class="player-status ${statusClass}">(${status})</span>
           </div>
           <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
+          <div>
+            <button onclick="addPlayerToQueueFromList('${player.name}')">Add to Queue</button>
+          </div>
         `;
         playerElement.ondblclick = () => {
           // Switch to the lobby where the player is located if in lobby
-          if (player.lobbyIndex !== undefined && player.lobbyIndex !== currentLobby) {
-            switchLobby(player.lobbyIndex);
-            showMainPage();
+          for (let i = 0; i < lobbies.length; i++) {
+            if (lobbies[i].team1.some(p => p.name === player.name) || lobbies[i].team2.some(p => p.name === player.name)) {
+              if (i !== currentLobby) {
+                switchLobby(i);
+                showMainPage();
+              }
+              break;
+            }
           }
           openEditModal(player, findPlayerLocation(player));
         };
         listElement.appendChild(playerElement);
       });
+    }
+
+    function addPlayerToQueueFromList(playerName) {
+      const player = allPlayers.find(p => p.name === playerName);
+      if (!player) return;
+
+      const alreadyInGame = lobbies.some(lobby =>
+        lobby.team1.concat(lobby.team2).some(p => p.name === player.name)
+      );
+      if (alreadyInGame) {
+        alert("Player is already in one of the lobbies");
+        return;
+      }
+
+      const alreadyInQueue = globalQueue.some(p => p.name === player.name);
+      if (alreadyInQueue) {
+        alert("Player is already in queue");
+        return;
+      }
+
+      globalQueue.unshift(player);
+      renderLobby();
+      updatePlayersList();
+      saveToLocalStorage();
     }
 
     function findPlayerLocation(player) {
@@ -733,6 +856,12 @@
       player.bhv = bhv;
       player.note = note;
 
+      // Update in allPlayers list
+      const allPlayerIndex = allPlayers.findIndex(p => p.name === player.name);
+      if (allPlayerIndex !== -1) {
+        allPlayers[allPlayerIndex] = {...player};
+      }
+
       closeModal();
       renderLobby();
       updatePlayersList();
@@ -753,7 +882,8 @@
     function saveToLocalStorage() {
       localStorage.setItem('dotaBalancerData', JSON.stringify({
         lobbies,
-        globalQueue
+        globalQueue,
+        allPlayers
       }));
     }
 
@@ -768,6 +898,19 @@
         }
         if (parsedData.globalQueue) {
           globalQueue = parsedData.globalQueue;
+        }
+        if (parsedData.allPlayers) {
+          allPlayers = parsedData.allPlayers;
+        } else {
+          // Migrate from old version
+          allPlayers = [...globalQueue];
+          lobbies.forEach(lobby => {
+            allPlayers.push(...lobby.team1, ...lobby.team2);
+          });
+          // Remove duplicates
+          allPlayers = allPlayers.filter((player, index, self) =>
+            index === self.findIndex(p => p.name === player.name)
+          );
         }
         renderLobby();
       }
