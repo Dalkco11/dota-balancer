@@ -7,22 +7,23 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
       overflow-x: hidden;
+      color: white;
     }
     .background {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: url('dota2-background.jpg') center/cover no-repeat;
-      filter: blur(5px);
+      background: url('dota2-background.gif') center/cover no-repeat;
+      filter: blur(3px) brightness(0.7);
       z-index: 0;
     }
     .overlay {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.7);
       z-index: 1;
     }
     .container {
@@ -31,28 +32,38 @@
       max-width: 1000px;
       margin: 0 auto;
       padding: 20px;
-      color: white;
     }
     .form-group {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 20px;
+      align-items: center;
     }
     input {
-      padding: 8px;
+      padding: 10px;
       font-size: 1rem;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 4px;
+    }
+    input::placeholder {
+      color: rgba(255,255,255,0.7);
     }
     button {
       padding: 10px 15px;
       cursor: pointer;
-      background: #444;
+      background: #4a5568;
       color: white;
       border: none;
       border-radius: 4px;
+      font-weight: bold;
+      transition: all 0.2s;
     }
     button:hover {
-      background: #555;
+      background: #2d3748;
+      transform: translateY(-1px);
     }
     .tabs {
       display: flex;
@@ -61,42 +72,55 @@
       flex-wrap: wrap;
     }
     .tab {
-      padding: 10px;
-      background: rgba(255,255,255,0.2);
+      padding: 10px 15px;
+      background: rgba(255,255,255,0.1);
       cursor: pointer;
       border-radius: 4px;
+      transition: all 0.2s;
+      font-weight: bold;
+    }
+    .tab:hover {
+      background: rgba(255,255,255,0.2);
     }
     .active-tab {
-      background: rgba(255,255,255,0.5);
+      background: #4299e1;
       font-weight: bold;
     }
     .team {
       margin: 20px 0;
-      padding: 10px;
-      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      background: rgba(0,0,0,0.4);
       border-radius: 10px;
       min-height: 150px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
     .player {
-      padding: 5px 10px;
+      padding: 8px 12px;
       margin: 5px 0;
       border-radius: 5px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
     }
-    .red { background-color: #ff4d4d; }
-    .yellow { background-color: #ffd11a; color: #000; }
-    .green { background-color: #33cc33; }
+    .player:hover {
+      transform: translateX(3px);
+    }
+    .red { background-color: rgba(239, 68, 68, 0.8); }
+    .yellow { background-color: rgba(234, 179, 8, 0.8); color: #000; }
+    .green { background-color: rgba(34, 197, 94, 0.8); }
     .banned { 
-      background-color: #000;
+      background-color: rgba(0,0,0,0.8);
       color: white;
       font-weight: bold;
+      border: 1px solid #f00;
     }
     .queue-container {
       margin-top: 30px;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
       padding: 15px;
       border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
     .queue-header {
       display: flex;
@@ -112,27 +136,33 @@
       margin: 15px 0;
     }
     #playerSearch {
-      width: 200px;
-      padding: 8px;
+      width: 250px;
+      padding: 10px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.2);
     }
     .player-list {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 10px;
-      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 15px;
+      border-radius: 8px;
       margin-bottom: 15px;
-      max-height: 400px;
+      max-height: 500px;
       overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
     }
     .player-list-item {
-      padding: 8px;
-      margin: 3px 0;
+      padding: 10px;
+      margin: 5px 0;
       cursor: pointer;
-      border-radius: 3px;
+      border-radius: 5px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
+      transition: all 0.2s;
     }
     .player-list-item:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
     }
     .modal {
       display: none;
@@ -141,56 +171,71 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       z-index: 100;
       justify-content: center;
       align-items: center;
     }
     .modal-content {
-      background: #222;
-      padding: 20px;
+      background: #1a202c;
+      padding: 25px;
       border-radius: 10px;
-      width: 300px;
+      width: 350px;
       max-width: 90%;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
     .modal-content input, .modal-content textarea {
       width: 100%;
-      padding: 8px;
-      margin: 5px 0;
+      padding: 10px;
+      margin: 8px 0;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 4px;
     }
     .modal-buttons {
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
+      margin-top: 15px;
+      gap: 10px;
     }
     .modal-buttons button {
-      padding: 8px 12px;
+      padding: 10px 15px;
+      flex: 1;
     }
     button.danger {
-      background-color: #ff4444;
+      background-color: #e53e3e;
       color: white;
     }
+    button.danger:hover {
+      background-color: #c53030;
+    }
     button.success {
-      background-color: #44ff44;
-      color: black;
+      background-color: #48bb78;
+      color: white;
+    }
+    button.success:hover {
+      background-color: #38a169;
     }
     .team.highlight {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
       transition: background 0.2s;
     }
     .player-status {
-      font-size: 0.8em;
-      opacity: 0.8;
-      margin-left: 5px;
+      font-size: 0.9em;
+      margin-left: 8px;
+      color: white;
+      opacity: 0.9;
     }
-    .status-queue { color: #aaa; }
-    .status-team1 { color: #ff4d4d; }
-    .status-team2 { color: #33cc33; }
-    .status-lobby1 { color: #4da6ff; }
-    .status-lobby2 { color: #ff9933; }
-    .status-lobby3 { color: #cc99ff; }
+    .status-queue { color: #a0aec0; }
+    .status-team1 { color: #fc8181; }
+    .status-team2 { color: #68d391; }
+    .status-lobby1 { color: #63b3ed; }
+    .status-lobby2 { color: #f6ad55; }
+    .status-lobby3 { color: #b794f4; }
     .filter-options {
-      margin: 10px 0;
+      margin: 15px 0;
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
@@ -200,48 +245,92 @@
       align-items: center;
       gap: 5px;
       cursor: pointer;
+      font-size: 0.95em;
     }
     .queue-player-actions {
       display: flex;
-      gap: 5px;
+      gap: 8px;
     }
     .team-count {
-      font-size: 0.8em;
-      opacity: 0.8;
+      font-size: 0.9em;
+      opacity: 0.9;
+      margin-left: 10px;
     }
     .suggestions {
       position: absolute;
-      background: #333;
-      border: 1px solid #444;
+      background: #2d3748;
+      border: 1px solid #4a5568;
       max-height: 200px;
       overflow-y: auto;
       z-index: 10;
       width: calc(100% - 16px);
       max-width: 300px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
     .suggestion-item {
-      padding: 8px;
+      padding: 10px;
       cursor: pointer;
+      transition: all 0.1s;
     }
     .suggestion-item:hover {
-      background: #444;
+      background: #4a5568;
     }
     .team-stats {
       display: flex;
       justify-content: space-between;
-      margin-top: 5px;
-      font-size: 0.9em;
+      margin-top: 10px;
+      font-size: 0.95em;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .team-stat {
-      margin-right: 10px;
+      background: rgba(0,0,0,0.3);
+      padding: 5px 10px;
+      border-radius: 4px;
     }
     .player-actions {
       display: flex;
-      gap: 5px;
+      gap: 8px;
+    }
+    .sort-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .sort-btn {
+      padding: 6px 12px;
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.1);
+    }
+    .sort-btn.active {
+      background: #4299e1;
+    }
+    h1, h2, h3 {
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2.2em;
+    }
+    h2 {
+      font-size: 1.8em;
+    }
+    h3 {
+      font-size: 1.4em;
+      display: flex;
+      align-items: center;
+    }
+    .teams {
+      display: flex;
+      gap: 20px;
     }
     @media (max-width: 768px) {
       .form-group {
         flex-direction: column;
+        align-items: stretch;
       }
       .teams {
         flex-direction: column;
@@ -250,6 +339,12 @@
         flex-direction: column;
       }
       .player-actions {
+        flex-direction: column;
+      }
+      input {
+        width: 100%;
+      }
+      .modal-buttons {
         flex-direction: column;
       }
     }
@@ -285,12 +380,12 @@
         <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
           <h3>Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
           <div id="team1Players"></div>
-          <p id="team1Stats"></p>
+          <div class="team-stats" id="team1Stats"></div>
         </div>
         <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
           <h3>Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
           <div id="team2Players"></div>
-          <p id="team2Stats"></p>
+          <div class="team-stats" id="team2Stats"></div>
         </div>
       </div>
 
@@ -320,13 +415,21 @@
         <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> Hide offline players</label>
         <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> Show banned only</label>
       </div>
+      <div class="sort-options">
+        <button class="sort-btn" onclick="sortPlayers('name', 'asc')">Name A-Z</button>
+        <button class="sort-btn" onclick="sortPlayers('name', 'desc')">Name Z-A</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'asc')">MMR Low-High</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'desc')">MMR High-Low</button>
+        <button class="sort-btn" onclick="sortPlayers('lastSeen', 'desc')">Newest First</button>
+        <button class="sort-btn" onclick="sortPlayers('lastSeen', 'asc')">Oldest First</button>
+      </div>
       <div class="player-list" id="allPlayersList">
         <div id="playersListContent"></div>
       </div>
       <button onclick="showMainPage()">Back to Lobby</button>
     </div>
 
-    <!-- Модальное окно редактирования -->
+    <!-- Edit Modal -->
     <div class="modal" id="editModal">
       <div class="modal-content">
         <h3>Edit Player</h3>
@@ -334,7 +437,7 @@
         <input type="number" id="editMMR" placeholder="MMR">
         <input type="number" id="editBHV" placeholder="BHV">
         <input type="text" id="editFriendId" placeholder="Friend ID">
-        <textarea id="editNote" placeholder="Notes..."></textarea>
+        <textarea id="editNote" placeholder="Notes..." rows="3"></textarea>
         <div class="modal-buttons">
           <button onclick="savePlayerChanges()">Save</button>
           <button onclick="closeModal()">Cancel</button>
@@ -354,6 +457,7 @@
     let allPlayers = [];
     let currentLobby = 0;
     let currentlyEditedPlayer = null;
+    let currentSort = { field: 'name', direction: 'asc' };
 
     function switchLobby(index) {
       currentLobby = index;
@@ -775,6 +879,26 @@
       updatePlayersList(document.getElementById("playerSearch").value.toLowerCase());
     }
 
+    function sortPlayers(field, direction) {
+      currentSort = { field, direction };
+      updatePlayersList();
+      
+      // Update active sort button
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Find and activate the clicked button
+      const buttons = document.querySelectorAll('.sort-btn');
+      for (let btn of buttons) {
+        if (btn.textContent.includes(field === 'name' ? 'Name' : field === 'mmr' ? 'MMR' : 'Newest') && 
+            btn.textContent.includes(direction === 'asc' ? 'A-Z' : direction === 'desc' ? 'Z-A' : '')) {
+          btn.classList.add('active');
+          break;
+        }
+      }
+    }
+
     function updatePlayersList(filter = "") {
       const listElement = document.getElementById("playersListContent");
       listElement.innerHTML = "";
@@ -785,7 +909,7 @@
       const hideOffline = document.getElementById("hideOffline").checked;
       const showBannedOnly = document.getElementById("showBannedOnly").checked;
       
-      const filteredPlayers = allPlayers.filter(player => {
+      let filteredPlayers = allPlayers.filter(player => {
         const inLobby = lobbies.some(l => l.team1.concat(l.team2).some(p => p.name === player.name));
         const inQueue = globalQueue.some(p => p.name === player.name);
         const isOnline = inLobby || inQueue;
@@ -798,8 +922,25 @@
         return true;
       });
 
-      // Sort by name for easier searching
-      filteredPlayers.sort((a, b) => a.name.localeCompare(b.name));
+      // Apply sorting
+      filteredPlayers.sort((a, b) => {
+        let valA, valB;
+        
+        if (currentSort.field === 'lastSeen') {
+          valA = new Date(a.lastSeen || 0);
+          valB = new Date(b.lastSeen || 0);
+        } else {
+          valA = a[currentSort.field];
+          valB = b[currentSort.field];
+        }
+        
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
+        if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
 
       filteredPlayers.forEach((player) => {
         const status = getPlayerStatus(player);
@@ -809,8 +950,8 @@
         playerElement.className = `player-list-item ${player.banned ? 'banned' : getColor(player.bhv)}`;
         playerElement.innerHTML = `
           <div>
-            ${player.name} 
-            <span class="player-status ${statusClass}">(${status})</span>
+            <strong>${player.name}</strong> 
+            <span class="player-status ${statusClass}">${status}</span>
           </div>
           <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
           <div class="player-actions">
