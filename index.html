@@ -83,11 +83,15 @@
       border-radius: 5px;
       display: flex;
       justify-content: space-between;
-      cursor: grab;
     }
     .red { background-color: #ff4d4d; }
     .yellow { background-color: #ffd11a; color: #000; }
     .green { background-color: #33cc33; }
+    .banned { 
+      background-color: #000;
+      color: white;
+      font-weight: bold;
+    }
     .queue-container {
       margin-top: 30px;
       background: rgba(0,0,0,0.3);
@@ -166,6 +170,10 @@
       background-color: #ff4444;
       color: white;
     }
+    button.success {
+      background-color: #44ff44;
+      color: black;
+    }
     .team.highlight {
       background: rgba(255, 255, 255, 0.3);
       transition: background 0.2s;
@@ -184,6 +192,7 @@
     .filter-options {
       margin: 10px 0;
       display: flex;
+      flex-wrap: wrap;
       gap: 15px;
     }
     .filter-options label {
@@ -226,6 +235,10 @@
     .team-stat {
       margin-right: 10px;
     }
+    .player-actions {
+      display: flex;
+      gap: 5px;
+    }
     @media (max-width: 768px) {
       .form-group {
         flex-direction: column;
@@ -234,6 +247,9 @@
         flex-direction: column;
       }
       .team-stats {
+        flex-direction: column;
+      }
+      .player-actions {
         flex-direction: column;
       }
     }
@@ -259,6 +275,7 @@
         </div>
         <input type="number" id="mmr" placeholder="Rating (MMR)">
         <input type="number" id="bhv" placeholder="BHV (0-12000)">
+        <input type="text" id="friendId" placeholder="Friend ID">
         <button onclick="addToQueue()">Add to Queue</button>
         <button onclick="moveAllToLobby()">Move All to Lobby</button>
         <button onclick="clearCurrentLobby()" class="danger">Clear Current Lobby</button>
@@ -300,6 +317,8 @@
       <div class="filter-options">
         <label><input type="checkbox" id="hideInLobby" checked onchange="updatePlayersList()"> Hide players in lobbies</label>
         <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> Hide players in queue</label>
+        <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> Hide offline players</label>
+        <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> Show banned only</label>
       </div>
       <div class="player-list" id="allPlayersList">
         <div id="playersListContent"></div>
@@ -314,10 +333,12 @@
         <input type="text" id="editName" placeholder="Nickname">
         <input type="number" id="editMMR" placeholder="MMR">
         <input type="number" id="editBHV" placeholder="BHV">
+        <input type="text" id="editFriendId" placeholder="Friend ID">
         <textarea id="editNote" placeholder="Notes..."></textarea>
         <div class="modal-buttons">
           <button onclick="savePlayerChanges()">Save</button>
           <button onclick="closeModal()">Cancel</button>
+          <button id="banButton" class="danger" onclick="toggleBanPlayer()">Ban</button>
         </div>
       </div>
     </div>
@@ -330,7 +351,7 @@
       { team1: [], team2: [] }
     ];
     let globalQueue = [];
-    let allPlayers = []; // Все игроки, которые когда-либо были добавлены
+    let allPlayers = [];
     let currentLobby = 0;
     let currentlyEditedPlayer = null;
 
@@ -372,7 +393,7 @@
       if (globalQueue.some(p => p.name === player.name)) {
         return 'In Queue';
       }
-      return 'Not in game';
+      return player.lastSeen ? `Offline (last seen: ${player.lastSeen})` : 'Offline';
     }
 
     function getStatusClass(status) {
@@ -393,7 +414,7 @@
       }
 
       const suggestions = allPlayers
-        .filter(p => p.name.toLowerCase().includes(input) && !globalQueue.some(q => q.name === p.name) && !lobbies.some(l => l.team1.concat(l.team2).some(t => t.name === p.name)))
+        .filter(p => !p.banned && p.name.toLowerCase().includes(input) && !globalQueue.some(q => q.name === p.name) && !lobbies.some(l => l.team1.concat(l.team2).some(t => t.name === p.name)))
         .slice(0, 5);
 
       const suggestionsDiv = document.getElementById('playerSuggestions');
@@ -412,6 +433,7 @@
           document.getElementById('name').value = player.name;
           document.getElementById('mmr').value = player.mmr;
           document.getElementById('bhv').value = player.bhv;
+          document.getElementById('friendId').value = player.friendId || '';
           suggestionsDiv.style.display = 'none';
         };
         suggestionsDiv.appendChild(div);
@@ -424,7 +446,17 @@
       const name = document.getElementById('name').value;
       const mmr = parseInt(document.getElementById('mmr').value);
       const bhv = parseInt(document.getElementById('bhv').value);
+      const friendId = document.getElementById('friendId').value;
+      
       if (!name || isNaN(mmr) || isNaN(bhv)) return;
+
+      // Check if player is banned
+      const bannedPlayer = allPlayers.find(p => (p.friendId && p.friendId === friendId && p.banned) || 
+                     (p.name === name && p.banned));
+      if (bannedPlayer) {
+        alert("This player is banned and cannot be added");
+        return;
+      }
 
       const alreadyInGame = lobbies.some(lobby =>
         lobby.team1.concat(lobby.team2).some(p => p.name === name)
@@ -440,12 +472,19 @@
         return;
       }
 
-      const player = { name, mmr, bhv };
+      const player = { name, mmr, bhv, friendId, lastSeen: new Date().toLocaleDateString() };
       globalQueue.unshift(player);
       
-      // Добавляем в общий список игроков, если его там нет
-      if (!allPlayers.some(p => p.name === name)) {
-        allPlayers.push(player);
+      // Add to all players list if not exists
+      const existingPlayer = allPlayers.find(p => p.name === name || (friendId && p.friendId === friendId));
+      if (!existingPlayer) {
+        allPlayers.push({...player});
+      } else {
+        // Update existing player data
+        existingPlayer.mmr = mmr;
+        existingPlayer.bhv = bhv;
+        existingPlayer.friendId = friendId;
+        existingPlayer.lastSeen = new Date().toLocaleDateString();
       }
 
       renderLobby();
@@ -455,6 +494,7 @@
       document.getElementById('name').value = '';
       document.getElementById('mmr').value = '';
       document.getElementById('bhv').value = '';
+      document.getElementById('friendId').value = '';
       document.getElementById('playerSuggestions').style.display = 'none';
     }
 
@@ -467,13 +507,10 @@
       
       // Distribute players with MMR priority
       sorted.forEach((p, i) => {
-        if (i % 2 === 0 && lobby.team1.length < 5) {
+        if (i % 2 === 0) {
           lobby.team1.push(p);
-        } else if (lobby.team2.length < 5) {
-          lobby.team2.push(p);
         } else {
-          // If teams are full, keep in queue
-          globalQueue.push(p);
+          lobby.team2.push(p);
         }
       });
       
@@ -498,18 +535,20 @@
       ev.preventDefault();
       const data = JSON.parse(ev.dataTransfer.getData("text"));
       
-      // Check if target team is full
-      if (target !== 'queue' && lobbies[currentLobby][target].length >= 5) {
-        alert("Team is already full (max 5 players)");
-        ev.target.classList.remove('highlight');
-        return;
-      }
-      
       let player;
       if (data.source === 'queue') {
         player = globalQueue.splice(data.index, 1)[0];
       } else {
         player = lobbies[currentLobby][data.source].splice(data.index, 1)[0];
+      }
+      
+      // Check if player is banned
+      if (player.banned) {
+        alert("Banned players cannot be added to teams or queue");
+        globalQueue.push(player); // Return to queue
+        renderLobby();
+        ev.target.classList.remove('highlight');
+        return;
       }
       
       if (target === 'queue') {
@@ -526,26 +565,28 @@
     function renderLobby() {
       function createPlayerElement(p, source, index, isQueue = false) {
         const el = document.createElement('div');
-        el.className = `player ${getColor(p.bhv)}`;
-        el.draggable = true;
-        el.ondragstart = (e) => drag(e, source, index);
+        el.className = `player ${p.banned ? 'banned' : getColor(p.bhv)}`;
+        el.draggable = !p.banned;
+        if (!p.banned) {
+          el.ondragstart = (e) => drag(e, source, index);
+        }
         el.ondblclick = () => openEditModal(p, { source, index, isQueue });
         
         const actions = isQueue ? `
           <div class="queue-player-actions">
-            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\">Team 1</button>
-            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\">Team 2</button>
+            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\" ${p.banned ? 'disabled' : ''}>Team 1</button>
+            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\" ${p.banned ? 'disabled' : ''}>Team 2</button>
             <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
           </div>
         ` : `
           <div>
             <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">Kick</button>
-            <button onclick=\"moveToQueue('${source}', ${index})\">To Queue</button>
+            <button onclick=\"moveToQueue('${source}', ${index})\" ${p.banned ? 'disabled' : ''}>To Queue</button>
           </div>
         `;
         
         el.innerHTML = `
-          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv}</div>
+          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv} ${p.banned ? '| BANNED' : ''}</div>
           ${actions}
         `;
         return el;
@@ -566,10 +607,11 @@
         document.getElementById(`${team}Count`).textContent = lobby[team].length;
 
         const sum = arr => arr.reduce((sum, x) => sum + x, 0);
-        const sumMMR = sum(lobby[team].map(p => p.mmr));
-        const sumBHV = sum(lobby[team].map(p => p.bhv));
-        const avgMMR = (sumMMR / lobby[team].length || 0).toFixed(1);
-        const avgBHV = (sumBHV / lobby[team].length || 0).toFixed(1);
+        const activePlayers = lobby[team].filter(p => !p.banned);
+        const sumMMR = sum(activePlayers.map(p => p.mmr));
+        const sumBHV = sum(activePlayers.map(p => p.bhv));
+        const avgMMR = (sumMMR / (activePlayers.length || 1)).toFixed(1);
+        const avgBHV = (sumBHV / (activePlayers.length || 1)).toFixed(1);
         
         const statsDiv = document.getElementById(`${team}Stats`);
         statsDiv.innerHTML = `
@@ -594,14 +636,17 @@
     function addToTeam(source, index, targetTeam) {
       if (source !== 'queue') return;
       
-      const lobby = lobbies[currentLobby];
-      if (lobby[targetTeam].length >= 5) {
-        alert("Team is already full (max 5 players)");
+      const player = globalQueue.splice(index, 1)[0];
+      
+      // Check if player is banned
+      if (player.banned) {
+        alert("Banned players cannot be added to teams");
+        globalQueue.splice(index, 0, player); // Return to original position
+        renderLobby();
         return;
       }
       
-      const player = globalQueue.splice(index, 1)[0];
-      lobby[targetTeam].push(player);
+      lobbies[currentLobby][targetTeam].push(player);
       renderLobby();
       saveToLocalStorage();
     }
@@ -609,15 +654,14 @@
     function balanceTeams() {
       const lobby = lobbies[currentLobby];
       
-      // Combine all players from both teams
-      let players = [...lobby.team1, ...lobby.team2];
+      // Combine all players from both teams (excluding banned)
+      let players = [...lobby.team1, ...lobby.team2].filter(p => !p.banned);
       
       // Reset teams
       lobby.team1 = [];
       lobby.team2 = [];
       
-      // Sort by BHV first (ascending - чтобы равномерно распределить плохих игроков)
-      // Then by MMR (descending - чтобы сильные игроки распределялись первыми)
+      // Sort by BHV first (ascending) then by MMR (descending)
       players.sort((a, b) => {
         if (a.bhv !== b.bhv) return a.bhv - b.bhv;
         return b.mmr - a.mmr;
@@ -653,18 +697,14 @@
           const diffIfTeam2 = Math.abs(team1BHV - newTeam2BHV) + Math.abs(team1MMR - newTeam2MMR) * 0.5;
           
           // Choose the option that minimizes both BHV and MMR differences
-          if (diffIfTeam1 < diffIfTeam2 && team1.length < 5) {
+          if (diffIfTeam1 < diffIfTeam2) {
             team1.push(player);
             team1BHV = newTeam1BHV;
             team1MMR = newTeam1MMR;
-          } else if (team2.length < 5) {
+          } else {
             team2.push(player);
             team2BHV = newTeam2BHV;
             team2MMR = newTeam2MMR;
-          } else if (team1.length < 5) {
-            team1.push(player);
-            team1BHV = newTeam1BHV;
-            team1MMR = newTeam1MMR;
           }
         }
         
@@ -684,6 +724,12 @@
       // Apply the best found distribution
       lobby.team1 = bestTeam1;
       lobby.team2 = bestTeam2;
+      
+      // Keep banned players in their original teams
+      const bannedPlayersTeam1 = lobbies[currentLobby].team1.filter(p => p.banned);
+      const bannedPlayersTeam2 = lobbies[currentLobby].team2.filter(p => p.banned);
+      lobby.team1.push(...bannedPlayersTeam1);
+      lobby.team2.push(...bannedPlayersTeam2);
       
       renderLobby();
       saveToLocalStorage();
@@ -710,7 +756,9 @@
 
     function moveToQueue(source, index) {
       const player = lobbies[currentLobby][source].splice(index, 1)[0];
-      globalQueue.push(player);
+      if (!player.banned) {
+        globalQueue.push(player);
+      }
       renderLobby();
       saveToLocalStorage();
     }
@@ -734,13 +782,18 @@
       // Apply filters
       const hideInLobby = document.getElementById("hideInLobby").checked;
       const hideInQueue = document.getElementById("hideInQueue").checked;
+      const hideOffline = document.getElementById("hideOffline").checked;
+      const showBannedOnly = document.getElementById("showBannedOnly").checked;
       
       const filteredPlayers = allPlayers.filter(player => {
         const inLobby = lobbies.some(l => l.team1.concat(l.team2).some(p => p.name === player.name));
         const inQueue = globalQueue.some(p => p.name === player.name);
+        const isOnline = inLobby || inQueue;
         
+        if (showBannedOnly) return player.banned;
         if (hideInLobby && inLobby) return false;
         if (hideInQueue && inQueue) return false;
+        if (hideOffline && !isOnline) return false;
         if (filter && !player.name.toLowerCase().includes(filter)) return false;
         return true;
       });
@@ -753,15 +806,16 @@
         const statusClass = getStatusClass(status);
         
         const playerElement = document.createElement("div");
-        playerElement.className = `player-list-item ${getColor(player.bhv)}`;
+        playerElement.className = `player-list-item ${player.banned ? 'banned' : getColor(player.bhv)}`;
         playerElement.innerHTML = `
           <div>
             ${player.name} 
             <span class="player-status ${statusClass}">(${status})</span>
           </div>
           <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
-          <div>
-            <button onclick="addPlayerToQueueFromList('${player.name}')">Add to Queue</button>
+          <div class="player-actions">
+            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>Add to Queue</button>
+            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">Edit</button>
           </div>
         `;
         playerElement.ondblclick = () => {
@@ -785,6 +839,11 @@
       const player = allPlayers.find(p => p.name === playerName);
       if (!player) return;
 
+      if (player.banned) {
+        alert("Banned players cannot be added to queue");
+        return;
+      }
+
       const alreadyInGame = lobbies.some(lobby =>
         lobby.team1.concat(lobby.team2).some(p => p.name === player.name)
       );
@@ -799,7 +858,7 @@
         return;
       }
 
-      globalQueue.unshift(player);
+      globalQueue.unshift({...player});
       renderLobby();
       updatePlayersList();
       saveToLocalStorage();
@@ -828,8 +887,51 @@
       document.getElementById("editName").value = player.name;
       document.getElementById("editMMR").value = player.mmr;
       document.getElementById("editBHV").value = player.bhv;
+      document.getElementById("editFriendId").value = player.friendId || '';
       document.getElementById("editNote").value = player.note || "";
+      
+      const banButton = document.getElementById("banButton");
+      if (player.banned) {
+        banButton.textContent = "Unban";
+        banButton.className = "success";
+      } else {
+        banButton.textContent = "Ban";
+        banButton.className = "danger";
+      }
+      
       document.getElementById("editModal").style.display = "flex";
+    }
+
+    function toggleBanPlayer() {
+      const { player } = currentlyEditedPlayer;
+      player.banned = !player.banned;
+      player.lastSeen = new Date().toLocaleDateString();
+      
+      // Update in allPlayers list
+      const allPlayerIndex = allPlayers.findIndex(p => 
+        p.name === player.name || (player.friendId && p.friendId === player.friendId)
+      );
+      if (allPlayerIndex !== -1) {
+        allPlayers[allPlayerIndex].banned = player.banned;
+        allPlayers[allPlayerIndex].lastSeen = player.lastSeen;
+      }
+      
+      // Remove from queues/lobbies if banned
+      if (player.banned) {
+        // Remove from global queue
+        globalQueue = globalQueue.filter(p => p.name !== player.name);
+        
+        // Remove from all lobbies
+        lobbies.forEach(lobby => {
+          lobby.team1 = lobby.team1.filter(p => p.name !== player.name);
+          lobby.team2 = lobby.team2.filter(p => p.name !== player.name);
+        });
+      }
+      
+      saveToLocalStorage();
+      renderLobby();
+      updatePlayersList();
+      closeModal();
     }
 
     function closeModal() {
@@ -840,6 +942,7 @@
       const name = document.getElementById("editName").value;
       const mmr = parseInt(document.getElementById("editMMR").value);
       const bhv = parseInt(document.getElementById("editBHV").value);
+      const friendId = document.getElementById("editFriendId").value;
       const note = document.getElementById("editNote").value;
 
       if (!name || isNaN(mmr) || isNaN(bhv)) {
@@ -850,16 +953,31 @@
       const { player, location } = currentlyEditedPlayer;
       if (!location) return;
 
+      // Check if friendId is already used by another player
+      if (friendId && friendId !== player.friendId) {
+        const existingPlayer = allPlayers.find(p => p.friendId === friendId && p.name !== player.name);
+        if (existingPlayer) {
+          alert("This Friend ID is already used by another player");
+          return;
+        }
+      }
+
       // Update player data in all locations
       player.name = name;
       player.mmr = mmr;
       player.bhv = bhv;
+      player.friendId = friendId;
       player.note = note;
+      player.lastSeen = new Date().toLocaleDateString();
 
       // Update in allPlayers list
-      const allPlayerIndex = allPlayers.findIndex(p => p.name === player.name);
+      const allPlayerIndex = allPlayers.findIndex(p => 
+        p.name === player.name || (player.friendId && p.friendId === player.friendId)
+      );
       if (allPlayerIndex !== -1) {
         allPlayers[allPlayerIndex] = {...player};
+      } else {
+        allPlayers.push({...player});
       }
 
       closeModal();
@@ -871,7 +989,8 @@
     function clearCurrentLobby() {
       if (confirm("Clear the current lobby? All players will be moved to queue.")) {
         const lobby = lobbies[currentLobby];
-        globalQueue.push(...lobby.team1, ...lobby.team2);
+        // Move only unbanned players to queue
+        globalQueue.push(...lobby.team1.filter(p => !p.banned), ...lobby.team2.filter(p => !p.banned));
         lobby.team1 = [];
         lobby.team2 = [];
         renderLobby();
