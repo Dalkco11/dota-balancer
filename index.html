@@ -395,13 +395,15 @@
         <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
         <button onclick="clearCurrentLobby()" class="danger" id="clearLobbyBtn">Clear Current Lobby</button>
       </div>
-
+      <canvas id="balanceChart" width="600" height="400" style="background: rgba(0,0,0,0.5); border: 1px solid #888; border-radius: 10px; margin-top: 20px; display: none;"></canvas>
+      <button onclick="hideBalanceChart()" id="hideChartBtn" style="display: none; margin-top: 10px;">Скрыть график</button>
       <div class="teams">
         <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
           <h3 id="team1Title">Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
           <div id="team1Players"></div>
           <div class="team-stats" id="team1Stats"></div>
         </div>
+
         <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
           <h3 id="team2Title">Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
           <div id="team2Players"></div>
@@ -970,6 +972,7 @@
       lobby.team1.push(...bannedPlayersTeam1);
       lobby.team2.push(...bannedPlayersTeam2);
       
+      drawBalanceChart();
       renderLobby();
       saveToLocalStorage();
     }
@@ -1621,7 +1624,89 @@
       bgDiv.style.background = `url('${value}') center/cover no-repeat`;
     }
   }
+    function drawBalanceChart() {
+      const canvas = document.getElementById('balanceChart');
+      const ctx = canvas.getContext('2d');
+      const btn = document.getElementById('hideChartBtn');
+      canvas.style.display = 'block';
+      btn.style.display = 'inline-block';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
+      const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+      const all = [...team1, ...team2];
+      if (all.length === 0) return;
+
+      const mmrs = all.map(p => p.mmr);
+      const bhvs = all.map(p => p.bhv);
+
+      const minMMR = Math.min(...mmrs), maxMMR = Math.max(...mmrs);
+      const minBHV = Math.min(...bhvs), maxBHV = Math.max(...bhvs);
+
+      const padX = 50;
+      const padY = 40;
+
+      const scaleX = mmr => padX + ((mmr - minMMR) / (maxMMR - minMMR)) * (canvas.width - padX * 1.5);
+      const scaleY = bhv => canvas.height - padY - ((bhv - minBHV) / (maxBHV - minBHV)) * (canvas.height - padY * 1.5);
+
+      // сетка и оси
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 5; i++) {
+        const x = padX + i * (canvas.width - padX * 1.5) / 5;
+        ctx.moveTo(x, padY);
+        ctx.lineTo(x, canvas.height - padY);
+      }
+      for (let i = 0; i <= 5; i++) {
+        const y = padY + i * (canvas.height - padY * 1.5) / 5;
+        ctx.moveTo(padX, y);
+        ctx.lineTo(canvas.width - padX / 2, y);
+      }
+      ctx.stroke();
+
+      // подписи осей
+      ctx.fillStyle = '#ccc';
+      ctx.font = '12px Arial';
+      ctx.fillText("MMR →", canvas.width - padX, canvas.height - 10);
+      ctx.fillText("↑ BHV", 10, padY - 10);
+
+      // точки
+      function drawPlayer(p, color) {
+        const x = scaleX(p.mmr);
+        const y = scaleY(p.bhv);
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // подпись: просто MMR/BHV
+        ctx.fillStyle = '#fff';
+        ctx.font = '11px Arial';
+        ctx.fillText(`${p.mmr}/${p.bhv}`, x + 8, y - 4);
+      }
+
+      team1.forEach(p => drawPlayer(p, 'red'));
+      team2.forEach(p => drawPlayer(p, 'limegreen'));
+    }
+
+    function drawPoint(x, y, color, label) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.fillStyle = 'white';
+      ctx.font = '12px Arial';
+      ctx.fillText(label, x + 8, y - 4);
+    }
+
+    
   
+  function hideBalanceChart() {
+    document.getElementById('balanceChart').style.display = 'none';
+    document.getElementById('hideChartBtn').style.display = 'none';
+  }
 </script>
 </body>
 </html>
