@@ -1533,11 +1533,30 @@
   function renderPlayerList() {
     const list = document.getElementById('playerList');
     list.innerHTML = '';
+    let added = 0, skipped = 0;
+
     players.forEach(player => {
+    if (typeof player.mmr === 'number' && typeof player.bhv === 'number') {
       const div = document.createElement('div');
-      div.textContent = `${player.name} — Рейтинг: ${player.rating}, BHV: ${player.bhv}`;
+      div.textContent = `${player.name} — MMR: ${player.mmr}, BHV: ${player.bhv}`;
       list.appendChild(div);
+      added++;
+
+      // Добавляем игрока в allPlayers, если его там ещё нет
+      const exists = allPlayers.find(p => p.name === player.name || (p.friendId && p.friendId === player.friendId));
+      if (!exists) {
+        allPlayers.push({...player});
+      }
+    } else {
+      skipped++;
+    }
     });
+
+    // сохраняем
+    saveToLocalStorage();
+    updatePlayersList(); // обновим список All Players
+
+    alert(`✅ Добавлено игроков: ${added}\n❌ Не удалось добавить: ${skipped}`);
   }
 </script>
 <script>
