@@ -411,6 +411,7 @@
 
       <div class="form-group">
         <button onclick="balanceTeams()" id="balanceBtn">Balance Teams</button>
+        <button onclick="suggestBetterSwap()">🔁 Предложить замену</button>
       </div>
 
       <div class="queue-container">
@@ -1540,6 +1541,46 @@
   }
 </script>
 <script>
+  function suggestBetterSwap() {
+  const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
+  const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+
+  let bestSwap = null;
+  let bestDiff = Infinity;
+
+  const calcTeamStats = (t1, t2) => {
+    const sum = arr => arr.reduce((s, x) => s + x, 0);
+    const t1MMR = sum(t1.map(p => p.mmr));
+    const t2MMR = sum(t2.map(p => p.mmr));
+    const t1BHV = sum(t1.map(p => p.bhv));
+    const t2BHV = sum(t2.map(p => p.bhv));
+    return Math.abs(t1MMR - t2MMR) + Math.abs(t1BHV - t2BHV);
+  };
+
+  for (let i = 0; i < team1.length; i++) {
+    for (let j = 0; j < team2.length; j++) {
+      const newTeam1 = [...team1];
+      const newTeam2 = [...team2];
+      [newTeam1[i], newTeam2[j]] = [newTeam2[j], newTeam1[i]];
+
+      const diff = calcTeamStats(newTeam1, newTeam2);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestSwap = [team1[i], team2[j]];
+      }
+    }
+  }
+
+  if (bestSwap) {
+    alert(
+      `🔁 Предлагается обмен:\n\n` +
+      `➡️ ${bestSwap[0].name} (Team 1) ⇄ ${bestSwap[1].name} (Team 2)\n\n` +
+      `⚖️ Это улучшит баланс MMR + BHV.`
+    );
+  } else {
+    alert("Не удалось найти подходящую замену.");
+  }
+}
   function changeBackground() {
     const value = document.getElementById('backgroundPicker').value;
     const bgDiv = document.getElementById('dynamicBackground');
@@ -1561,6 +1602,7 @@
       bgDiv.style.background = `url('${value}') center/cover no-repeat`;
     }
   }
+  
 </script>
 </body>
 </html>
