@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dota 2 Team Balancer</title>
   <style>
+    #backgroundSelect {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      font-family: Arial, sans-serif;
+    }
     body {
       margin: 0;
       font-family: 'Arial', sans-serif;
@@ -351,7 +363,7 @@
   </style>
 </head>
 <body>
-  <div class="background"></div>
+  <div id="dynamicBackground" class="background"></div>
   <div class="overlay"></div>
   <div class="container">
     <div class="tabs">
@@ -1458,5 +1470,42 @@
       renderLobby();
     };
   </script>
+  <div id="backgroundSelect">
+  <label for="backgroundPicker">Background:</label>
+  <select id="backgroundPicker" onchange="changeBackground()">
+    <option value="dota2-background.jpg">Dota Static</option>
+    <option value="dota2-background.gif">Dota Animated</option>
+    <option value="red-blur">Red Blur</option>
+    <option value="black-blur">Black Blur</option>
+    <option value="white-blur">White Blur</option>
+    <option value="starscape.jpg">Starscape</option>
+    <option value="cyberpunk.jpg">Cyberpunk</option>
+    <option value="gradient">Gradient Blur</option>
+  </select>
+</div>
+
+<script>
+  function changeBackground() {
+    const value = document.getElementById('backgroundPicker').value;
+    const bgDiv = document.getElementById('dynamicBackground');
+
+    if (value === 'red-blur') {
+      bgDiv.style.background = 'radial-gradient(circle, rgba(255,0,0,0.6), rgba(0,0,0,0.8))';
+      bgDiv.style.backgroundSize = 'cover';
+    } else if (value === 'black-blur') {
+      bgDiv.style.background = 'radial-gradient(circle, rgba(0,0,0,0.6), rgba(30,30,30,0.9))';
+      bgDiv.style.backgroundSize = 'cover';
+    } else if (value === 'white-blur') {
+      bgDiv.style.background = 'radial-gradient(circle, rgba(255,255,255,0.6), rgba(200,200,200,0.9))';
+      bgDiv.style.backgroundSize = 'cover';
+    } else if (value === 'gradient') {
+      bgDiv.style.background = 'linear-gradient(135deg, #1f4037, #99f2c8)';
+      bgDiv.style.backgroundSize = 'cover';
+      bgDiv.style.filter = 'blur(8px)';
+    } else {
+      bgDiv.style.background = `url('${value}') center/cover no-repeat`;
+    }
+  }
+</script>
 </body>
 </html>
