@@ -1126,7 +1126,11 @@
         if (hideInLobby && inLobby) return false;
         if (hideInQueue && inQueue) return false;
         if (hideOffline && !isOnline) return false;
-        if (filter && !player.name.toLowerCase().includes(filter)) return false;
+        if (
+          filter &&
+          !player.name.toLowerCase().includes(filter) &&
+          !(player.friendId && player.friendId.toLowerCase().includes(filter))
+        ) return false;
         return true;
       });
 
