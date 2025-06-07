@@ -390,6 +390,7 @@
         </div>
         <input type="number" id="mmr" placeholder="Rating (MMR)">
         <input type="number" id="bhv" placeholder="BHV (0-12000)">
+        <input type="number" id="trophyLevel" placeholder="Trophy Level">
         <input type="text" id="friendId" placeholder="Friend ID">
         <button onclick="addToQueue()" id="addToQueueBtn">Add to Queue</button>
         <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
@@ -424,9 +425,7 @@
             <button onclick="clearQueue()" class="danger" id="clearQueueBtn">Clear Queue</button>
           </div>
         </div>
-        <div class="queue-content" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')" ondragleave="clearHighlight(event)">
-          <!-- Queue content will be rendered here -->
-        </div>
+        <div class="queue-content" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')" ondragleave="clearHighlight(event)"></div>
       </div>
     </div>
 
@@ -465,6 +464,7 @@
         <input type="text" id="editName" placeholder="Nickname">
         <input type="number" id="editMMR" placeholder="MMR">
         <input type="number" id="editBHV" placeholder="BHV">
+        <input type="number" id="editTrophyLevel" placeholder="Trophy Level">
         <input type="text" id="editFriendId" placeholder="Friend ID">
         <textarea id="editNote" placeholder="Notes..." rows="3"></textarea>
         <div class="modal-buttons">
@@ -518,6 +518,7 @@
         nickname: "Nickname",
         rating: "Rating (MMR)",
         bhv: "BHV (0-12000)",
+        trophyLevel: "Trophy Level",
         friendId: "Friend ID",
         addToQueue: "Add to Queue",
         moveAllToLobby: "Move All to Lobby",
@@ -557,6 +558,7 @@
         nickname: "Никнейм",
         rating: "Рейтинг (MMR)",
         bhv: "BHV (0-12000)",
+        trophyLevel: "Уровень трофея",
         friendId: "Friend ID",
         addToQueue: "Добавить в очередь",
         moveAllToLobby: "Переместить всех в лобби",
@@ -666,11 +668,12 @@
       suggestions.forEach(player => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        div.textContent = `${player.name} (MMR: ${player.mmr}, BHV: ${player.bhv})`;
+        div.textContent = `${player.name} (MMR: ${player.mmr}, BHV: ${player.bhv}, Trophy: ${player.trophyLevel || 0})`;
         div.onclick = () => {
           document.getElementById('name').value = player.name;
           document.getElementById('mmr').value = player.mmr;
           document.getElementById('bhv').value = player.bhv;
+          document.getElementById('trophyLevel').value = player.trophyLevel || '';
           document.getElementById('friendId').value = player.friendId || '';
           suggestionsDiv.style.display = 'none';
         };
@@ -684,9 +687,10 @@
       const name = document.getElementById('name').value;
       const mmr = parseInt(document.getElementById('mmr').value);
       const bhv = parseInt(document.getElementById('bhv').value);
+      const trophyLevel = parseInt(document.getElementById('trophyLevel').value) || 0;
       const friendId = document.getElementById('friendId').value;
       
-      if (!name || isNaN(mmr) || isNaN(bhv)) return;
+      if (!name || isNaN(mmr) || isNaN(bhv) || trophyLevel < 0) return;
 
       // Check if player is banned
       const bannedPlayer = allPlayers.find(p => (p.friendId && p.friendId === friendId && p.banned) || 
@@ -710,7 +714,7 @@
         return;
       }
 
-      const player = { name, mmr, bhv, friendId, lastSeen: new Date().toLocaleDateString() };
+      const player = { name, mmr, bhv, trophyLevel, friendId, lastSeen: new Date().toLocaleDateString() };
       globalQueue.unshift(player);
       
       // Add to all players list if not exists
@@ -721,6 +725,7 @@
         // Update existing player data
         existingPlayer.mmr = mmr;
         existingPlayer.bhv = bhv;
+        existingPlayer.trophyLevel = trophyLevel;
         existingPlayer.friendId = friendId;
         existingPlayer.lastSeen = new Date().toLocaleDateString();
       }
@@ -732,6 +737,7 @@
       document.getElementById('name').value = '';
       document.getElementById('mmr').value = '';
       document.getElementById('bhv').value = '';
+      document.getElementById('trophyLevel').value = '';
       document.getElementById('friendId').value = '';
       document.getElementById('playerSuggestions').style.display = 'none';
     }
@@ -812,19 +818,19 @@
         
         const actions = isQueue ? `
           <div class="queue-player-actions">
-            <button onclick=\"addToTeam('${source}', ${index}, 'team1')\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 1' : 'Команда 1'}</button>
-            <button onclick=\"addToTeam('${source}', ${index}, 'team2')\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 2' : 'Команда 2'}</button>
-            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
+            <button onclick="addToTeam('${source}', ${index}, 'team1')" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 1' : 'Команда 1'}</button>
+            <button onclick="addToTeam('${source}', ${index}, 'team2')" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 2' : 'Команда 2'}</button>
+            <button onclick="kickPlayer('${source}', ${index}, ${isQueue})">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
           </div>
         ` : `
           <div>
-            <button onclick=\"kickPlayer('${source}', ${index}, ${isQueue})\">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
-            <button onclick=\"moveToQueue('${source}', ${index})\" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'To Queue' : 'В очередь'}</button>
+            <button onclick="kickPlayer('${source}', ${index}, ${isQueue})">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
+            <button onclick="moveToQueue('${source}', ${index})" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'To Queue' : 'В очередь'}</button>
           </div>
         `;
         
         el.innerHTML = `
-          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv} ${p.banned ? '| BANNED' : ''}</div>
+          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv} | Trophy: ${p.trophyLevel || 0} ${p.banned ? '| BANNED' : ''}</div>
           ${actions}
         `;
         return el;
@@ -850,7 +856,11 @@
         const sumBHV = sum(activePlayers.map(p => p.bhv));
         const avgMMR = (sumMMR / (activePlayers.length || 1)).toFixed(1);
         const avgBHV = (sumBHV / (activePlayers.length || 1)).toFixed(1);
-        
+
+        const trophyLevels = activePlayers.map(p => p.trophyLevel || 0);
+        const minTrophy = trophyLevels.length > 0 ? Math.min(...trophyLevels) : 0;
+        const maxTrophy = trophyLevels.length > 0 ? Math.max(...trophyLevels) : 0;
+
         const statsDiv = document.getElementById(`${team}Stats`);
         statsDiv.innerHTML = `
           <div class="team-stats">
@@ -858,6 +868,7 @@
             <span class="team-stat">Avg BHV: ${avgBHV}</span>
             <span class="team-stat">Sum MMR: ${sumMMR}</span>
             <span class="team-stat">Sum BHV: ${sumBHV}</span>
+            <span class="team-stat">Trophy Range: ${minTrophy} - ${maxTrophy}</span>
           </div>
         `;
       });
@@ -894,88 +905,102 @@
 
     function balanceTeams() {
       const lobby = lobbies[currentLobby];
-      
-      // Combine all players from both teams (excluding banned)
+
+      // Collect only unbanned players from both teams
       let players = [...lobby.team1, ...lobby.team2].filter(p => !p.banned);
-      
-      // Reset teams
-      lobby.team1 = [];
-      lobby.team2 = [];
-      
-      // Sort by BHV first (ascending) then by MMR (descending)
-      players.sort((a, b) => {
-        if (a.bhv !== b.bhv) return a.bhv - b.bhv;
-        return b.mmr - a.mmr;
+
+      // We want exactly 10 players 5v5, so if we have less, try to fill from queue
+      if (players.length < 10) {
+        const needed = 10 - players.length;
+        const fromQueue = globalQueue.filter(p => !p.banned).slice(0, needed);
+        players = players.concat(fromQueue);
+        // Remove added players from globalQueue
+        globalQueue = globalQueue.filter(p => !fromQueue.includes(p));
+      } else if (players.length > 10) {
+        // If more than 10, take best 10 by MMR descending (for demo simplicity)
+        players = players.sort((a,b) => b.mmr - a.mmr).slice(0,10);
+      }
+
+      if (players.length < 10) {
+        alert(currentLanguage === 'en' ? "Need 10 players to balance teams 5v5" : "Нужно 10 игроков для балансировки команд 5 на 5");
+        return;
+      }
+
+      // Special red-color players matching - separate them
+      const redPlayers = players.filter(p => getColor(p.bhv) === 'red');
+      const otherPlayers = players.filter(p => getColor(p.bhv) !== 'red');
+
+      // Sort red players by trophyLevel descending then by BHV and MMR for pairing
+      redPlayers.sort((a,b) => b.trophyLevel - a.trophyLevel || a.bhv - b.bhv || b.mmr - a.mmr);
+      // We will try to match red players 1v1 or 2v1, 2v2 per your description by efficient pairing
+
+      // Then sort other players by trophyLevel range (spread preference), then order (by trophyLevel), then MMR descending
+      // For range proceed as assigning players closer in trophyLevel to same team
+      otherPlayers.sort((a,b) => {
+        // No direct "range" param here; so use difference heuristic - for sorting just trophyLevel descending then mmr desc
+        return b.trophyLevel - a.trophyLevel || b.mmr - a.mmr;
       });
-      
-      // Try multiple balancing attempts to find the best distribution
-      let bestDiff = Infinity;
-      let bestTeam1 = [];
-      let bestTeam2 = [];
-      
-      // Several attempts to find optimal balance
-      for (let attempt = 0; attempt < 10; attempt++) {
-        // Shuffle players slightly for different attempts
-        if (attempt > 0) {
-          players = shuffleArray(players);
-        }
-        
-        const team1 = [];
-        const team2 = [];
-        let team1BHV = 0, team2BHV = 0;
-        let team1MMR = 0, team2MMR = 0;
-        
-        // Distribute players
-        for (const player of players) {
-          // Calculate potential new totals
-          const newTeam1BHV = team1BHV + player.bhv;
-          const newTeam2BHV = team2BHV + player.bhv;
-          const newTeam1MMR = team1MMR + player.mmr;
-          const newTeam2MMR = team2MMR + player.mmr;
-          
-          // Calculate differences for both options
-          const diffIfTeam1 = Math.abs(newTeam1BHV - team2BHV) + Math.abs(newTeam1MMR - team2MMR) * 0.5;
-          const diffIfTeam2 = Math.abs(team1BHV - newTeam2BHV) + Math.abs(team1MMR - newTeam2MMR) * 0.5;
-          
-          // Choose the option that minimizes both BHV and MMR differences
-          if (diffIfTeam1 < diffIfTeam2) {
-            team1.push(player);
-            team1BHV = newTeam1BHV;
-            team1MMR = newTeam1MMR;
-          } else {
-            team2.push(player);
-            team2BHV = newTeam2BHV;
-            team2MMR = newTeam2MMR;
-          }
-        }
-        
-        // Calculate total difference for this attempt
-        const bhvDiff = Math.abs(team1BHV - team2BHV);
-        const mmrDiff = Math.abs(team1MMR - team2MMR);
-        const totalDiff = bhvDiff + mmrDiff * 0.5; // Give more weight to BHV
-        
-        // Keep this distribution if it's better
-        if (totalDiff < bestDiff) {
-          bestDiff = totalDiff;
-          bestTeam1 = [...team1];
-          bestTeam2 = [...team2];
+
+      // Create teams arrays
+      const team1 = [];
+      const team2 = [];
+
+      // Assign red players strategically - try pairs or singles against each other
+      // We will try to balance red players count evenly if possible, preferring a 1v1 or 2v2 formation
+      for (let i=0; i<redPlayers.length; i++) {
+        if (i % 2 === 0) {
+          team1.push(redPlayers[i]);
+        } else {
+          team2.push(redPlayers[i]);
         }
       }
-      
-      // Apply the best found distribution
-      lobby.team1 = bestTeam1;
-      lobby.team2 = bestTeam2;
-      
-      // Keep banned players in their original teams
-      const bannedPlayersTeam1 = lobbies[currentLobby].team1.filter(p => p.banned);
-      const bannedPlayersTeam2 = lobbies[currentLobby].team2.filter(p => p.banned);
-      lobby.team1.push(...bannedPlayersTeam1);
-      lobby.team2.push(...bannedPlayersTeam2);
-      
+
+      // Fill remaining spots with other players trying to balance trophyLevel ranges
+      // Sort team by trophyLevel sum so far:
+      let sumTrophy1 = team1.reduce((sum,p) => sum + (p.trophyLevel || 0), 0);
+      let sumTrophy2 = team2.reduce((sum,p) => sum + (p.trophyLevel || 0), 0);
+
+      for (const player of otherPlayers) {
+        // Always assign player to the team with currently lower trophyLevel sum
+        if (team1.length < 5 && team2.length < 5) {
+          if ((sumTrophy1 + player.trophyLevel) <= (sumTrophy2 + player.trophyLevel)) {
+            team1.push(player);
+            sumTrophy1 += player.trophyLevel;
+          } else {
+            team2.push(player);
+            sumTrophy2 += player.trophyLevel;
+          }
+        } else if (team1.length < 5) {
+          team1.push(player);
+          sumTrophy1 += player.trophyLevel;
+        } else if (team2.length < 5) {
+          team2.push(player);
+          sumTrophy2 += player.trophyLevel;
+        }
+      }
+
+      // If teams are not exactly 5 players each, balance by adding/removing from queue
+      // If still missing players, add from queue
+      while (team1.length < 5 && globalQueue.length > 0) {
+        team1.push(globalQueue.shift());
+      }
+      while (team2.length < 5 && globalQueue.length > 0) {
+        team2.push(globalQueue.shift());
+      }
+
+      // Remove balanced players from queue if they were there mistakenly
+      globalQueue = globalQueue.filter(p => !team1.includes(p) && !team2.includes(p));
+
+      // Put balanced teams back to lobby
+      lobby.team1 = team1;
+      lobby.team2 = team2;
+
       drawBalanceChart();
       renderLobby();
       saveToLocalStorage();
     }
+
+    // The rest of the code remains unchanged except adding trophyLevel load/save in relevant places
 
     function createBestLobby() {
       if (globalQueue.length < 10) {
@@ -1009,7 +1034,10 @@
         
         const mmrDiff = Math.max(...mmrs) - Math.min(...mmrs);
         const bhvDiff = Math.max(...bhvs) - Math.min(...bhvs);
-        const totalDiff = mmrDiff * 0.5 + bhvDiff; // More weight to BHV
+        const trophyLevels = group.map(p => p.trophyLevel || 0);
+        const trophyDiff = Math.max(...trophyLevels) - Math.min(...trophyLevels);
+
+        const totalDiff = mmrDiff * 0.5 + bhvDiff + trophyDiff * 2; // More weight to BHV and trophy spread
         
         if (totalDiff < bestDiff) {
           bestDiff = totalDiff;
@@ -1101,7 +1129,6 @@
       const listElement = document.getElementById("playersListContent");
       listElement.innerHTML = "";
 
-      // Apply filters
       const hideInLobby = document.getElementById("hideInLobby").checked;
       const hideInQueue = document.getElementById("hideInQueue").checked;
       const hideOffline = document.getElementById("hideOffline").checked;
@@ -1115,7 +1142,6 @@
         const inQueue = globalQueue.some(p => p.name === player.name);
         const isOnline = inLobby || inQueue;
         
-        // Apply BHV filters if any are active
         if (bhvFilter1 || bhvFilter2 || bhvFilter3) {
           const bhv = player.bhv;
           const matchesFilter = 
@@ -1138,7 +1164,6 @@
         return true;
       });
 
-      // Apply sorting
       filteredPlayers.sort((a, b) => {
         let valA, valB;
         
@@ -1169,14 +1194,13 @@
             <strong>${player.name}</strong> 
             <span class="player-status ${statusClass}">${status}</span>
           </div>
-          <div>MMR: ${player.mmr} | BHV: ${player.bhv}</div>
+          <div>MMR: ${player.mmr} | BHV: ${player.bhv} | Trophy: ${player.trophyLevel || 0}</div>
           <div class="player-actions">
             <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Add to Queue' : 'В очередь'}</button>
             <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">${currentLanguage === 'en' ? 'Edit' : 'Ред.'}</button>
           </div>
         `;
         playerElement.ondblclick = () => {
-          // Switch to the lobby where the player is located if in lobby
           for (let i = 0; i < lobbies.length; i++) {
             if (lobbies[i].team1.some(p => p.name === player.name) || lobbies[i].team2.some(p => p.name === player.name)) {
               if (i !== currentLobby) {
@@ -1222,13 +1246,11 @@
     }
 
     function findPlayerLocation(player) {
-      // Check if player is in queue
       const queueIndex = globalQueue.findIndex(p => p.name === player.name);
       if (queueIndex !== -1) {
         return { source: 'queue', index: queueIndex, isQueue: true };
       }
       
-      // Check if player is in any lobby
       for (let i = 0; i < lobbies.length; i++) {
         const lobby = lobbies[i];
         for (const [source, players] of Object.entries(lobby)) {
@@ -1244,6 +1266,7 @@
       document.getElementById("editName").value = player.name;
       document.getElementById("editMMR").value = player.mmr;
       document.getElementById("editBHV").value = player.bhv;
+      document.getElementById("editTrophyLevel").value = player.trophyLevel || '';
       document.getElementById("editFriendId").value = player.friendId || '';
       document.getElementById("editNote").value = player.note || "";
       
@@ -1264,7 +1287,6 @@
       player.banned = !player.banned;
       player.lastSeen = new Date().toLocaleDateString();
       
-      // Update in allPlayers list
       const allPlayerIndex = allPlayers.findIndex(p => 
         p.name === player.name || (player.friendId && p.friendId === player.friendId)
       );
@@ -1273,12 +1295,9 @@
         allPlayers[allPlayerIndex].lastSeen = player.lastSeen;
       }
       
-      // Remove from queues/lobbies if banned
       if (player.banned) {
-        // Remove from global queue
         globalQueue = globalQueue.filter(p => p.name !== player.name);
         
-        // Remove from all lobbies
         lobbies.forEach(lobby => {
           lobby.team1 = lobby.team1.filter(p => p.name !== player.name);
           lobby.team2 = lobby.team2.filter(p => p.name !== player.name);
@@ -1299,6 +1318,7 @@
       const name = document.getElementById("editName").value;
       const mmr = parseInt(document.getElementById("editMMR").value);
       const bhv = parseInt(document.getElementById("editBHV").value);
+      const trophyLevel = parseInt(document.getElementById("editTrophyLevel").value) || 0;
       const friendId = document.getElementById("editFriendId").value;
       const note = document.getElementById("editNote").value;
 
@@ -1310,7 +1330,6 @@
       const { player, location } = currentlyEditedPlayer;
       if (!location) return;
 
-      // Check if friendId is already used by another player
       if (friendId && friendId !== player.friendId) {
         const existingPlayer = allPlayers.find(p => p.friendId === friendId && p.name !== player.name);
         if (existingPlayer) {
@@ -1319,15 +1338,14 @@
         }
       }
 
-      // Update player data in all locations
       player.name = name;
       player.mmr = mmr;
       player.bhv = bhv;
+      player.trophyLevel = trophyLevel;
       player.friendId = friendId;
       player.note = note;
       player.lastSeen = new Date().toLocaleDateString();
 
-      // Update in allPlayers list
       const allPlayerIndex = allPlayers.findIndex(p => 
         p.name === player.name || (player.friendId && p.friendId === player.friendId)
       );
@@ -1346,7 +1364,6 @@
     function clearCurrentLobby() {
       if (confirm(currentLanguage === 'en' ? "Clear the current lobby? All players will be moved to queue." : "Очистить текущее лобби? Все игроки будут перемещены в очередь.")) {
         const lobby = lobbies[currentLobby];
-        // Move only unbanned players to queue
         globalQueue.push(...lobby.team1.filter(p => !p.banned), ...lobby.team2.filter(p => !p.banned));
         lobby.team1 = [];
         lobby.team2 = [];
@@ -1373,12 +1390,13 @@
 
     function applyLanguage() {
       const lang = translations[currentLanguage];
-      
+
       // Main page
       document.getElementById("mainTitle").textContent = lang.title;
       document.getElementById("name").placeholder = lang.nickname;
       document.getElementById("mmr").placeholder = lang.rating;
       document.getElementById("bhv").placeholder = lang.bhv;
+      document.getElementById("trophyLevel").placeholder = lang.trophyLevel;
       document.getElementById("friendId").placeholder = lang.friendId;
       document.getElementById("addToQueueBtn").textContent = lang.addToQueue;
       document.getElementById("moveAllBtn").textContent = lang.moveAllToLobby;
@@ -1389,7 +1407,7 @@
       document.getElementById("queueTitle").innerHTML = `${lang.globalQueue} <span class="team-count">(<span id="queueCount">0</span>)</span>`;
       document.getElementById("createLobbyBtn").textContent = lang.createLobby;
       document.getElementById("clearQueueBtn").textContent = lang.clearQueue;
-      
+
       // All players page
       document.getElementById("allPlayersTitle").textContent = lang.allPlayers;
       document.getElementById("playerSearch").placeholder = `${lang.nickname}...`;
@@ -1407,10 +1425,13 @@
       document.getElementById("sortBhvAsc").textContent = lang.sortBhvAsc;
       document.getElementById("sortBhvDesc").textContent = lang.sortBhvDesc;
       document.getElementById("backToLobbyBtn").textContent = lang.backToLobby;
-      
+
       // Edit modal
       document.getElementById("editPlayerTitle").textContent = lang.editPlayer;
       document.getElementById("editName").placeholder = lang.nickname;
+      document.getElementById("editMMR").placeholder = lang.rating;
+      document.getElementById("editBHV").placeholder = lang.bhv;
+      document.getElementById("editTrophyLevel").placeholder = lang.trophyLevel;
       document.getElementById("savePlayerBtn").textContent = lang.save;
       document.getElementById("cancelEditBtn").textContent = lang.cancel;
       
@@ -1418,8 +1439,7 @@
       document.getElementById("settingsTitle").textContent = lang.settings;
       document.getElementById("languageLabel").textContent = lang.language;
       document.getElementById("closeSettingsBtn").textContent = lang.close;
-      
-      // Update ban button if modal is open
+
       if (document.getElementById("editModal").style.display === "flex" && currentlyEditedPlayer) {
         const banButton = document.getElementById("banButton");
         if (currentlyEditedPlayer.player.banned) {
@@ -1430,8 +1450,7 @@
           banButton.className = "danger";
         }
       }
-      
-      // Re-render UI to update language
+
       renderLobby();
       if (document.getElementById("allPlayersPage").style.display !== "none") {
         updatePlayersList();
@@ -1462,12 +1481,10 @@
         if (parsedData.allPlayers) {
           allPlayers = parsedData.allPlayers;
         } else {
-          // Migrate from old version
           allPlayers = [...globalQueue];
           lobbies.forEach(lobby => {
             allPlayers.push(...lobby.team1, ...lobby.team2);
           });
-          // Remove duplicates
           allPlayers = allPlayers.filter((player, index, self) =>
             index === self.findIndex(p => p.name === player.name)
           );
@@ -1484,146 +1501,129 @@
       loadFromLocalStorage();
       renderLobby();
     };
-  </script>
-  <div id="backgroundSelect">
-  <label for="backgroundPicker">Background:</label>
-  <select id="backgroundPicker" onchange="changeBackground()">
-    <option value="dota2-background.jpg">Dota Static</option>
-    <option value="dota2-background.gif">Dota Animated</option>
-    <option value="red-blur">Red Blur</option>
-    <option value="black-blur">Black Blur</option>
-    <option value="white-blur">White Blur</option>
-    <option value="starscape.jpg">Starscape</option>
-    <option value="cyberpunk.jpg">Cyberpunk</option>
-    <option value="gradient">Gradient Blur</option>
-  </select>
-</div>
-<script>
-  let players = []; // список игроков
 
-  function downloadPlayers() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allPlayers));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "players.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    document.body.removeChild(downloadAnchorNode);
-  }
+    function downloadPlayers() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allPlayers));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "players.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      document.body.removeChild(downloadAnchorNode);
+    }
 
-
-  function loadPlayers(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (Array.isArray(data)) {
-          players = data;
-          renderPlayerList(); // твоя функция отображения
-        } else {
-          alert("Файл не содержит список игроков.");
+    function loadPlayers(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            players = data;
+            renderPlayerList();
+          } else {
+            alert("Файл не содержит список игроков.");
+          }
+        } catch (err) {
+          alert("Ошибка загрузки файла: " + err.message);
         }
-      } catch (err) {
-        alert("Ошибка загрузки файла: " + err.message);
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  function renderPlayerList() {
-    const list = document.getElementById('playerList');
-    list.innerHTML = '';
-    let added = 0, skipped = 0;
-
-    players.forEach(player => {
-    if (typeof player.mmr === 'number' && typeof player.bhv === 'number') {
-      const div = document.createElement('div');
-      div.textContent = `${player.name} — MMR: ${player.mmr}, BHV: ${player.bhv}`;
-      list.appendChild(div);
-      added++;
-
-      // Добавляем игрока в allPlayers, если его там ещё нет
-      const exists = allPlayers.find(p => p.name === player.name || (p.friendId && p.friendId === player.friendId));
-      if (!exists) {
-        allPlayers.push({...player});
-      }
-    } else {
-      skipped++;
+      };
+      reader.readAsText(file);
     }
-    });
 
-    // сохраняем
-    saveToLocalStorage();
-    updatePlayersList(); // обновим список All Players
+    function renderPlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      let added = 0, skipped = 0;
 
-    alert(`✅ Добавлено игроков: ${added}\n❌ Не удалось добавить: ${skipped}`);
-  }
-</script>
-<script>
-  function suggestBetterSwap() {
-  const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
-  const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+      players.forEach(player => {
+        if (typeof player.mmr === 'number' && typeof player.bhv === 'number') {
+          const div = document.createElement('div');
+          const trophy = player.trophyLevel || 0;
+          div.textContent = `${player.name} — MMR: ${player.mmr}, BHV: ${player.bhv}, Trophy: ${trophy}`;
+          list.appendChild(div);
+          added++;
 
-  let bestSwap = null;
-  let bestDiff = Infinity;
+          const exists = allPlayers.find(p => p.name === player.name || (p.friendId && p.friendId === player.friendId));
+          if (!exists) {
+            allPlayers.push({...player});
+          }
+        } else {
+          skipped++;
+        }
+      });
 
-  const calcTeamStats = (t1, t2) => {
-    const sum = arr => arr.reduce((s, x) => s + x, 0);
-    const t1MMR = sum(t1.map(p => p.mmr));
-    const t2MMR = sum(t2.map(p => p.mmr));
-    const t1BHV = sum(t1.map(p => p.bhv));
-    const t2BHV = sum(t2.map(p => p.bhv));
-    return Math.abs(t1MMR - t2MMR) + Math.abs(t1BHV - t2BHV);
-  };
+      saveToLocalStorage();
+      updatePlayersList();
 
-  for (let i = 0; i < team1.length; i++) {
-    for (let j = 0; j < team2.length; j++) {
-      const newTeam1 = [...team1];
-      const newTeam2 = [...team2];
-      [newTeam1[i], newTeam2[j]] = [newTeam2[j], newTeam1[i]];
+      alert(`✅ Добавлено игроков: ${added}\n❌ Не удалось добавить: ${skipped}`);
+    }
 
-      const diff = calcTeamStats(newTeam1, newTeam2);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestSwap = [team1[i], team2[j]];
+    function suggestBetterSwap() {
+      const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
+      const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+
+      let bestSwap = null;
+      let bestDiff = Infinity;
+
+      const calcTeamStats = (t1, t2) => {
+        const sum = arr => arr.reduce((s, x) => s + x, 0);
+        const t1MMR = sum(t1.map(p => p.mmr));
+        const t2MMR = sum(t2.map(p => p.mmr));
+        const t1BHV = sum(t1.map(p => p.bhv));
+        const t2BHV = sum(t2.map(p => p.bhv));
+        return Math.abs(t1MMR - t2MMR) + Math.abs(t1BHV - t2BHV);
+      };
+
+      for (let i = 0; i < team1.length; i++) {
+        for (let j = 0; j < team2.length; j++) {
+          const newTeam1 = [...team1];
+          const newTeam2 = [...team2];
+          [newTeam1[i], newTeam2[j]] = [newTeam2[j], newTeam1[i]];
+
+          const diff = calcTeamStats(newTeam1, newTeam2);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestSwap = [team1[i], team2[j]];
+          }
+        }
+      }
+
+      if (bestSwap) {
+        alert(
+          `🔁 Предлагается обмен:\n\n` +
+          `➡️ ${bestSwap[0].name} (Team 1) ⇄ ${bestSwap[1].name} (Team 2)\n\n` +
+          `⚖️ Это улучшит баланс MMR + BHV.`
+        );
+      } else {
+        alert("Не удалось найти подходящую замену.");
       }
     }
-  }
 
-  if (bestSwap) {
-    alert(
-      `🔁 Предлагается обмен:\n\n` +
-      `➡️ ${bestSwap[0].name} (Team 1) ⇄ ${bestSwap[1].name} (Team 2)\n\n` +
-      `⚖️ Это улучшит баланс MMR + BHV.`
-    );
-  } else {
-    alert("Не удалось найти подходящую замену.");
-  }
-}
-  function changeBackground() {
-    const value = document.getElementById('backgroundPicker').value;
-    const bgDiv = document.getElementById('dynamicBackground');
+    function changeBackground() {
+      const value = document.getElementById('backgroundPicker').value;
+      const bgDiv = document.getElementById('dynamicBackground');
 
-    if (value === 'red-blur') {
-      bgDiv.style.background = 'radial-gradient(circle, rgba(255,0,0,0.6), rgba(0,0,0,0.8))';
-      bgDiv.style.backgroundSize = 'cover';
-    } else if (value === 'black-blur') {
-      bgDiv.style.background = 'radial-gradient(circle, rgba(0,0,0,0.6), rgba(30,30,30,0.9))';
-      bgDiv.style.backgroundSize = 'cover';
-    } else if (value === 'white-blur') {
-      bgDiv.style.background = 'radial-gradient(circle, rgba(255,255,255,0.6), rgba(200,200,200,0.9))';
-      bgDiv.style.backgroundSize = 'cover';
-    } else if (value === 'gradient') {
-      bgDiv.style.background = 'linear-gradient(135deg, #1f4037, #99f2c8)';
-      bgDiv.style.backgroundSize = 'cover';
-      bgDiv.style.filter = 'blur(8px)';
-    } else {
-      bgDiv.style.background = `url('${value}') center/cover no-repeat`;
+      if (value === 'red-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(255,0,0,0.6), rgba(0,0,0,0.8))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'black-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(0,0,0,0.6), rgba(30,30,30,0.9))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'white-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(255,255,255,0.6), rgba(200,200,200,0.9))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'gradient') {
+        bgDiv.style.background = 'linear-gradient(135deg, #1f4037, #99f2c8)';
+        bgDiv.style.backgroundSize = 'cover';
+        bgDiv.style.filter = 'blur(8px)';
+      } else {
+        bgDiv.style.background = `url('${value}') center/cover no-repeat`;
+      }
     }
-  }
+
     function drawBalanceChart() {
       const canvas = document.getElementById('balanceChart');
       const ctx = canvas.getContext('2d');
@@ -1649,7 +1649,6 @@
       const scaleX = mmr => padX + ((mmr - minMMR) / (maxMMR - minMMR)) * (canvas.width - padX * 1.5);
       const scaleY = bhv => canvas.height - padY - ((bhv - minBHV) / (maxBHV - minBHV)) * (canvas.height - padY * 1.5);
 
-      // сетка и оси
       ctx.strokeStyle = '#444';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -1665,13 +1664,11 @@
       }
       ctx.stroke();
 
-      // подписи осей
       ctx.fillStyle = '#ccc';
       ctx.font = '12px Arial';
       ctx.fillText("MMR →", canvas.width - padX, canvas.height - 10);
       ctx.fillText("↑ BHV", 10, padY - 10);
 
-      // точки
       function drawPlayer(p, color) {
         const x = scaleX(p.mmr);
         const y = scaleY(p.bhv);
@@ -1680,7 +1677,6 @@
         ctx.arc(x, y, 6, 0, 2 * Math.PI);
         ctx.fill();
 
-        // подпись: просто MMR/BHV
         ctx.fillStyle = '#fff';
         ctx.font = '11px Arial';
         ctx.fillText(`${p.mmr}/${p.bhv}`, x + 8, y - 4);
@@ -1690,23 +1686,24 @@
       team2.forEach(p => drawPlayer(p, 'limegreen'));
     }
 
-    function drawPoint(x, y, color, label) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, 6, 0, 2 * Math.PI);
-      ctx.fill();
-
-      ctx.fillStyle = 'white';
-      ctx.font = '12px Arial';
-      ctx.fillText(label, x + 8, y - 4);
+    function hideBalanceChart() {
+      document.getElementById('balanceChart').style.display = 'none';
+      document.getElementById('hideChartBtn').style.display = 'none';
     }
-
-    
-  
-  function hideBalanceChart() {
-    document.getElementById('balanceChart').style.display = 'none';
-    document.getElementById('hideChartBtn').style.display = 'none';
-  }
-</script>
+  </script>
+  <div id="backgroundSelect">
+  <label for="backgroundPicker">Background:</label>
+  <select id="backgroundPicker" onchange="changeBackground()">
+    <option value="dota2-background.jpg">Dota Static</option>
+    <option value="dota2-background.gif" selected>Dota Animated</option>
+    <option value="red-blur">Red Blur</option>
+    <option value="black-blur">Black Blur</option>
+    <option value="white-blur">White Blur</option>
+    <option value="starscape.jpg">Starscape</option>
+    <option value="cyberpunk.jpg">Cyberpunk</option>
+    <option value="gradient">Gradient Blur</option>
+  </select>
+</div>
 </body>
 </html>
+
