@@ -736,6 +736,21 @@
     А зря! 😏
   </div>
   
+  <!-- Balancer Confirmation Modal -->
+  <div class="modal" id="balancerConfirmModal">
+    <div class="modal-content">
+      <h3 style="color: var(--accent-blue); text-align: center;">⚠️ Подтверждение выбора</h3>
+      <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
+        Ну разраб же не дурак, он шарит что версия разраба лучше<br>
+        и надо подтвердить выбор
+      </div>
+      <div class="modal-buttons">
+        <button onclick="confirmBalancerChange()" class="success">Подтвердить</button>
+        <button onclick="cancelBalancerChange()" id="stayDeveloperBtn">Остаться на версии Разработчика</button>
+      </div>
+    </div>
+  </div>
+  
   <div id="playerList" style="position: relative; z-index: 2; margin-top: 100px; color: white;"></div>
   <div id="dynamicBackground" class="background"></div>
   <div class="overlay"></div>
@@ -871,6 +886,15 @@
           </select>
         </div>
         
+        <!-- Balancer Selection -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label id="balancerLabel" style="color: var(--text-light);">Balancer:</label>
+          <select id="balancerSelect" onchange="changeBalancer()">
+            <option value="developer" selected>Developer Balancer</option>
+            <option value="kolton">Kolton's Balancer</option>
+          </select>
+        </div>
+        
         <!-- Data Management -->
         <div class="form-group" style="margin-bottom: 20px;">
           <label style="color: var(--text-light); margin-bottom: 10px; display: block;" id="dataLabel">Data Management:</label>
@@ -899,6 +923,7 @@
     let currentlyEditedPlayer = null;
     let currentSort = { field: 'name', direction: 'asc' };
     let currentLanguage = 'en';
+    let currentBalancer = 'developer';
     let bhvFilters = {
       '0-5000': false,
       '5000-7500': false,
@@ -950,7 +975,10 @@
         background: "Background:",
         dataManagement: "Data Management:",
         downloadPlayers: "💾 Download Players",
-        loadPlayers: "📂 Load Players"
+        loadPlayers: "📂 Load Players",
+        balancer: "Balancer:",
+        developerBalancer: "Developer Balancer",
+        koltonBalancer: "Kolton's Balancer"
       },
       ru: {
         title: "Балансировщик команд Dota 2",
@@ -995,7 +1023,10 @@
         background: "Фон:",
         dataManagement: "Управление данными:",
         downloadPlayers: "💾 Скачать игроков",
-        loadPlayers: "📂 Загрузить игроков"
+        loadPlayers: "📂 Загрузить игроков",
+        balancer: "Балансировщик:",
+        developerBalancer: "Балансировщик разработчика",
+        koltonBalancer: "Балансировщик Колтона"
       }
     };
 
@@ -1308,6 +1339,14 @@
     }
 
     function balanceTeams() {
+      if (currentBalancer === 'kolton') {
+        balanceTeamsKolton();
+      } else {
+        balanceTeamsDeveloper();
+      }
+    }
+
+    function balanceTeamsDeveloper() {
       const lobby = lobbies[currentLobby];
 
       // Collect only unbanned players from both teams
@@ -1394,6 +1433,51 @@
 
       // Remove balanced players from queue if they were there mistakenly
       globalQueue = globalQueue.filter(p => !team1.includes(p) && !team2.includes(p));
+
+      // Put balanced teams back to lobby
+      lobby.team1 = team1;
+      lobby.team2 = team2;
+
+      drawBalanceChart();
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function balanceTeamsKolton() {
+      const lobby = lobbies[currentLobby];
+      
+      // Collect only unbanned players from both teams
+      let players = [...lobby.team1, ...lobby.team2].filter(p => !p.banned);
+
+      // Fill from queue if needed
+      if (players.length < 10) {
+        const needed = 10 - players.length;
+        const fromQueue = globalQueue.filter(p => !p.banned).slice(0, needed);
+        players = players.concat(fromQueue);
+        globalQueue = globalQueue.filter(p => !fromQueue.includes(p));
+      } else if (players.length > 10) {
+        players = players.sort((a,b) => (-b.bhv + b.mmr) - (-a.bhv + a.mmr)).slice(0,10);
+      }
+
+      if (players.length < 10) {
+        alert(currentLanguage === 'en' ? "Need 10 players to balance teams 5v5" : "Нужно 10 игроков для балансировки команд 5 на 5");
+        return;
+      }
+
+      // Kolton's algorithm: Sort by BHV (порядочность) descending, then by MMR descending
+      const sortedPlayers = players.sort((a, b) => b.bhv - a.bhv || b.mmr - a.mmr);
+      
+      const team1 = [];
+      const team2 = [];
+      
+      // Distribute players alternately, starting with highest BHV
+      sortedPlayers.forEach((player, index) => {
+        if (index % 2 === 0) {
+          team1.push(player);
+        } else {
+          team2.push(player);
+        }
+      });
 
       // Put balanced teams back to lobby
       lobby.team1 = team1;
@@ -1787,10 +1871,36 @@
     function openSettingsModal() {
       document.getElementById("settingsModal").style.display = "flex";
       document.getElementById("languageSelect").value = currentLanguage;
+      document.getElementById("balancerSelect").value = currentBalancer;
     }
 
     function closeSettingsModal() {
       document.getElementById("settingsModal").style.display = "none";
+    }
+
+    function changeBalancer() {
+      const selectedBalancer = document.getElementById("balancerSelect").value;
+      
+      if (selectedBalancer === 'kolton') {
+        // Показываем модальное окно подтверждения
+        document.getElementById("balancerConfirmModal").style.display = "flex";
+      } else {
+        currentBalancer = selectedBalancer;
+        saveToLocalStorage();
+      }
+    }
+
+    function confirmBalancerChange() {
+      currentBalancer = 'kolton';
+      document.getElementById("balancerConfirmModal").style.display = "none";
+      saveToLocalStorage();
+      closeSettingsModal();
+    }
+
+    function cancelBalancerChange() {
+      // Возвращаем селектор к разработчику
+      document.getElementById("balancerSelect").value = 'developer';
+      document.getElementById("balancerConfirmModal").style.display = "none";
     }
 
     function changeLanguage() {
@@ -1853,9 +1963,18 @@
       document.getElementById("settingsTitle").textContent = lang.settings;
       document.getElementById("languageLabel").textContent = lang.language;
       document.getElementById("backgroundLabel").textContent = lang.background;
+      document.getElementById("balancerLabel").textContent = lang.balancer;
+      
+      // Update balancer select options
+      const balancerSelect = document.getElementById("balancerSelect");
+      balancerSelect.options[0].textContent = lang.developerBalancer;
+      balancerSelect.options[1].textContent = lang.koltonBalancer;
+      
       document.getElementById("dataLabel").textContent = lang.dataManagement;
       document.getElementById("downloadBtn").textContent = lang.downloadPlayers;
       document.getElementById("loadBtn").textContent = lang.loadPlayers;
+      document.getElementById("stayDeveloperBtn").textContent = currentLanguage === 'en' ? 
+        "Stay on Developer Version" : "Остаться на версии Разработчика";
       document.getElementById("closeSettingsBtn").textContent = lang.close;
 
       if (document.getElementById("editModal").style.display === "flex" && currentlyEditedPlayer) {
@@ -1880,7 +1999,8 @@
         lobbies,
         globalQueue,
         allPlayers,
-        currentLanguage
+        currentLanguage,
+        currentBalancer
       }));
     }
 
@@ -1909,6 +2029,9 @@
         }
         if (parsedData.currentLanguage) {
           currentLanguage = parsedData.currentLanguage;
+        }
+        if (parsedData.currentBalancer) {
+          currentBalancer = parsedData.currentBalancer;
         }
         applyLanguage();
         renderLobby();
