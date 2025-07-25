@@ -2073,36 +2073,55 @@
     }
 
     function loadFromLocalStorage() {
-      const savedData = localStorage.getItem('dotaBalancerData');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        if (parsedData.lobbies) {
-          parsedData.lobbies.forEach((lobby, index) => {
-            lobbies[index] = lobby;
-          });
-        }
-        if (parsedData.globalQueue) {
-          globalQueue = parsedData.globalQueue;
-        }
-        if (parsedData.allPlayers) {
-          allPlayers = parsedData.allPlayers;
+      try {
+        const savedData = localStorage.getItem('dotaBalancerData');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          
+          // Initialize lobbies
+          if (parsedData.lobbies) {
+            parsedData.lobbies.forEach((lobby, index) => {
+              lobbies[index] = lobby || { team1: [], team2: [] };
+            });
+          }
+          
+          // Initialize global queue
+          if (parsedData.globalQueue) {
+            globalQueue = parsedData.globalQueue || [];
+          }
+          
+          // Initialize all players
+          if (parsedData.allPlayers) {
+            allPlayers = parsedData.allPlayers || [];
+          } else {
+            // Build allPlayers from current data
+            allPlayers = [];
+            globalQueue.forEach(p => allPlayers.push({...p}));
+            lobbies.forEach(lobby => {
+              lobby.team1.forEach(p => allPlayers.push({...p}));
+              lobby.team2.forEach(p => allPlayers.push({...p}));
+            });
+            allPlayers = allPlayers.filter((player, index, self) =>
+              index === self.findIndex(p => p.name === player.name)
+            );
+          }
+          
+          if (parsedData.currentLanguage) {
+            currentLanguage = parsedData.currentLanguage;
+          }
+          if (parsedData.currentBalancer) {
+            currentBalancer = parsedData.currentBalancer;
+          }
+          
+          applyLanguage();
+          renderLobby();
         } else {
-          allPlayers = [...globalQueue];
-          lobbies.forEach(lobby => {
-            allPlayers.push(...lobby.team1, ...lobby.team2);
-          });
-          allPlayers = allPlayers.filter((player, index, self) =>
-            index === self.findIndex(p => p.name === player.name)
-          );
+          // Initialize empty state if no saved data
+          renderLobby();
         }
-        if (parsedData.currentLanguage) {
-          currentLanguage = parsedData.currentLanguage;
-        }
-        if (parsedData.currentBalancer) {
-          currentBalancer = parsedData.currentBalancer;
-        }
-        applyLanguage();
-        renderLobby();
+      } catch (error) {
+        console.error('Error loading from localStorage:', error);
+        renderLobby(); // Render empty state on error
       }
     }
 
@@ -2142,8 +2161,20 @@
       loadFromLocalStorage();
       renderLobby();
       
-      // Show promo modal every time
-      setTimeout(showPromoModal, 1000); // Show after 1 second
+      // Force render lobby to ensure players are visible
+      setTimeout(() => {
+        renderLobby();
+        updatePlayersList();
+      }, 100);
+      
+      // Show promo modal every time with retry
+      setTimeout(() => {
+        try {
+          showPromoModal();
+        } catch (error) {
+          console.error('Failed to show promo modal:', error);
+        }
+      }, 1000);
     };
 
     function downloadPlayers() {
