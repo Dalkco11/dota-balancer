@@ -718,21 +718,78 @@
     </button>
     
     <!-- Calculator and Donate buttons -->
-    <button class="settings-button" onclick="openBhvCalculator()" title="Калькулятор порядочности" style="top: 80px;">
+    <button class="settings-button" onclick="openBhvCalculator()" title="Калькулятор порядочности" style="top: 60px;">
       📊
     </button>
     
-    <button class="settings-button" onclick="openDonateModal()" title="Донат разработчику" style="top: 140px; background: linear-gradient(135deg, #ff6b6b, #ffd93d);">
+    <button class="settings-button" onclick="openDonateModal()" title="Донат разработчику" style="top: 110px; background: linear-gradient(135deg, #ff6b6b, #ffd93d);">
       💰
     </button>
     
+    <!-- Current track display -->
+    <div id="currentTrackDisplay" style="position: fixed; top: 160px; right: 20px; background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 1001; display: none; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">
+      <span id="currentTrackNameDisplay">Нет музыки</span>
+    </div>
+    
     <!-- Special Offer button -->
-    <button class="settings-button" onclick="showPromoModal()" title="Специальное предложение" style="top: 200px; background: linear-gradient(135deg, #007bff, #00d4ff); border-radius: 50%;">
+    <button class="settings-button" onclick="showPromoModal()" title="Специальное предложение" style="top: 190px; background: linear-gradient(135deg, #007bff, #00d4ff); border-radius: 50%;">
       🎯
     </button>
     
+    <!-- Audio Player button -->
+    <button class="settings-button" onclick="toggleAudioPlayer()" title="Аудиоплеер" style="top: 240px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 50%;">
+      🎵
+    </button>
+    
+    <!-- Audio Player Modal -->
+    <div class="modal" id="audioPlayerModal">
+      <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 style="color: #8b5cf6; text-align: center;">🎵 Аудиоплеер</h3>
+        <div style="margin: 20px 0;">
+          <!-- Custom Audio Player -->
+          <div style="background: var(--bg-dark); padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+            <div style="text-align: center; margin-bottom: 15px;">
+              <div id="currentTrackName" style="font-size: 16px; font-weight: bold; color: var(--text-light); margin-bottom: 10px;">Нет музыки</div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                <button onclick="previousTrack()" style="background: var(--bg-medium); border: none; color: var(--text-light); font-size: 20px; cursor: pointer; padding: 10px; border-radius: 50%;">⏮️</button>
+                <button onclick="togglePlayPause()" id="playPauseBtn" style="background: var(--accent-green); border: none; color: white; font-size: 24px; cursor: pointer; padding: 15px; border-radius: 50%; width: 60px; height: 60px;">▶️</button>
+                <button onclick="nextTrack()" style="background: var(--bg-medium); border: none; color: var(--text-light); font-size: 20px; cursor: pointer; padding: 10px; border-radius: 50%;">⏭️</button>
+              </div>
+            </div>
+            
+            <!-- Progress bar -->
+            <div style="margin-bottom: 15px;">
+              <input type="range" id="progressBar" min="0" max="100" value="0" style="width: 100%; margin-bottom: 5px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dark);">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+              </div>
+            </div>
+            
+            <!-- Volume control -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="color: var(--text-dark);">🔊</span>
+              <input type="range" id="volumeSlider" min="0" max="100" value="70" style="flex: 1;">
+              <span id="volumeValue">70%</span>
+            </div>
+          </div>
+          
+          <!-- Playlist -->
+          <div style="background: var(--bg-medium); padding: 15px; border-radius: 12px;">
+            <h4 style="color: var(--text-light); margin-bottom: 10px;">Плейлист</h4>
+            <div id="playlist" style="max-height: 200px; overflow-y: auto;">
+              <!-- Dynamic playlist will be populated here -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="closeAudioPlayer()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Animated cloud for special offer -->
-    <div id="promoCloud" style="position: fixed; top: 180px; right: 70px; background: linear-gradient(135deg, #fff, #f0f8ff); color: #333; padding: 10px 15px; border-radius: 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); font-size: 13px; font-weight: bold; z-index: 1001; display: none; animation: cloudFloat 3s ease-in-out infinite; pointer-events: none; border: 2px solid #007bff;">
+    <div id="promoCloud" style="position: fixed; top: 150px; right: 70px; background: linear-gradient(135deg, #fff, #f0f8ff); color: #333; padding: 10px 15px; border-radius: 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); font-size: 13px; font-weight: bold; z-index: 1001; display: none; animation: cloudFloat 3s ease-in-out infinite; pointer-events: none; border: 2px solid #007bff;">
       <span id="cloudText">Тыкни меня! 🎯</span>
     </div>
   
@@ -2490,6 +2547,194 @@
     function openDonateLink() {
       window.open('https://funpay.com/lots/offer?id=41171783', '_blank');
       closeDonateModal();
+    }
+
+    // Audio Player functionality
+    let audioPlayer = null;
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let tracks = [];
+
+    function toggleAudioPlayer() {
+      const modal = document.getElementById('audioPlayerModal');
+      if (modal.style.display === 'flex') {
+        closeAudioPlayer();
+      } else {
+        openAudioPlayer();
+      }
+    }
+
+    function openAudioPlayer() {
+      document.getElementById('audioPlayerModal').style.display = 'flex';
+      initializeAudioPlayer();
+    }
+
+    function closeAudioPlayer() {
+      document.getElementById('audioPlayerModal').style.display = 'none';
+    }
+
+    function initializeAudioPlayer() {
+      if (!audioPlayer) {
+        audioPlayer = new Audio();
+        audioPlayer.addEventListener('loadedmetadata', updateDuration);
+        audioPlayer.addEventListener('timeupdate', updateProgress);
+        audioPlayer.addEventListener('ended', nextTrack);
+        
+        // Volume control
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        
+        volumeSlider.addEventListener('input', function() {
+          const volume = this.value / 100;
+          audioPlayer.volume = volume;
+          volumeValue.textContent = this.value + '%';
+        });
+        
+        // Progress bar
+        const progressBar = document.getElementById('progressBar');
+        progressBar.addEventListener('input', function() {
+          const seekTime = (this.value / 100) * audioPlayer.duration;
+          audioPlayer.currentTime = seekTime;
+        });
+        
+        // Set initial volume
+        audioPlayer.volume = 0.7;
+      }
+      
+      // Scan sounds folder for music files
+      scanSoundsFolder();
+      
+      // Load first track if tracks are available
+      if (!audioPlayer.src && tracks.length > 0) {
+        loadTrack(0);
+      }
+    }
+
+    function scanSoundsFolder() {
+      // Define available music files in sounds folder
+      tracks = [
+        { name: "Twinky - Ах, Как Хорошо", file: "sounds/Twinky - Ах, Как Хорошо.mp3" }
+      ];
+      
+      // Update playlist display
+      updatePlaylistDisplay();
+    }
+
+    function updatePlaylistDisplay() {
+      const playlistDiv = document.getElementById('playlist');
+      playlistDiv.innerHTML = '';
+      
+      if (tracks.length === 0) {
+        playlistDiv.innerHTML = '<div style="text-align: center; color: var(--text-dark); padding: 20px;">Нет доступных треков</div>';
+        return;
+      }
+      
+      tracks.forEach((track, index) => {
+        const trackItem = document.createElement('div');
+        trackItem.className = 'track-item';
+        trackItem.onclick = () => playTrack(index);
+        trackItem.style.cssText = 'padding: 10px; margin: 5px 0; background: var(--bg-light); border-radius: 8px; cursor: pointer; transition: all 0.2s;';
+        
+        trackItem.innerHTML = `
+          <div style="font-weight: bold;">🎵 ${track.name}</div>
+          <div style="font-size: 12px; color: var(--text-dark);">${track.file}</div>
+        `;
+        
+        trackItem.addEventListener('mouseenter', function() {
+          this.style.background = 'var(--bg-dark)';
+          this.style.transform = 'translateX(3px)';
+        });
+        
+        trackItem.addEventListener('mouseleave', function() {
+          this.style.background = 'var(--bg-light)';
+          this.style.transform = 'translateX(0)';
+        });
+        
+        playlistDiv.appendChild(trackItem);
+      });
+    }
+
+    function loadTrack(index) {
+      if (index < 0 || index >= tracks.length) return;
+      
+      currentTrackIndex = index;
+      const track = tracks[index];
+      
+      // Check if file exists
+      fetch(track.file, { method: 'HEAD' })
+        .then(response => {
+          if (response.ok) {
+            audioPlayer.src = track.file;
+            document.getElementById('currentTrackName').textContent = track.name;
+            updatePlayButton();
+          } else {
+            // File doesn't exist, show error
+            document.getElementById('currentTrackName').textContent = 'Файл не найден: ' + track.name;
+            audioPlayer.src = '';
+          }
+        })
+        .catch(() => {
+          document.getElementById('currentTrackName').textContent = 'Ошибка загрузки: ' + track.name;
+          audioPlayer.src = '';
+        });
+    }
+
+    function playTrack(index) {
+      loadTrack(index);
+      if (audioPlayer.src) {
+        audioPlayer.play();
+        isPlaying = true;
+        updatePlayButton();
+      }
+    }
+
+    function togglePlayPause() {
+      if (!audioPlayer || !audioPlayer.src) return;
+      
+      if (isPlaying) {
+        audioPlayer.pause();
+        isPlaying = false;
+      } else {
+        audioPlayer.play();
+        isPlaying = true;
+      }
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      playPauseBtn.textContent = isPlaying ? '⏸️' : '▶️';
+    }
+
+    function nextTrack() {
+      const nextIndex = (currentTrackIndex + 1) % tracks.length;
+      playTrack(nextIndex);
+    }
+
+    function previousTrack() {
+      const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+      playTrack(prevIndex);
+    }
+
+    function updateDuration() {
+      const totalTime = document.getElementById('totalTime');
+      const minutes = Math.floor(audioPlayer.duration / 60);
+      const seconds = Math.floor(audioPlayer.duration % 60);
+      totalTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      if (!audioPlayer.duration) return;
+      
+      const progressBar = document.getElementById('progressBar');
+      const currentTime = document.getElementById('currentTime');
+      
+      const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      progressBar.value = progress;
+      
+      const minutes = Math.floor(audioPlayer.currentTime / 60);
+      const seconds = Math.floor(audioPlayer.currentTime % 60);
+      currentTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
     // Cloud animation functions
