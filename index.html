@@ -4,177 +4,252 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dota 2 Team Balancer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-dark: #1a1a2e;
+      --bg-medium: #16213e;
+      --bg-light: #0f3460;
+      --text-light: #e0e0e0;
+      --text-dark: #a0a0a0;
+      --accent-blue: #007bff;
+      --accent-blue-hover: #0056b3;
+      --accent-green: #28a745;
+      --accent-green-hover: #218838;
+      --accent-red: #dc3545;
+      --accent-red-hover: #c82333;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+
     #backgroundSelect {
       position: fixed;
       bottom: 20px;
       right: 20px;
       z-index: 9999;
-      background: rgba(0,0,0,0.5);
-      color: white;
+      background: var(--bg-medium);
+      color: var(--text-light);
       padding: 10px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.2);
-      font-family: Arial, sans-serif;
+      border: 1px solid var(--border-color);
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 12px var(--shadow-color);
     }
     body {
       margin: 0;
-      font-family: 'Arial', sans-serif;
+      font-family: 'Inter', sans-serif;
       overflow-x: hidden;
-      color: white;
+      color: var(--text-light);
+      background-color: var(--bg-dark); /* Fallback */
     }
     .background {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
       background: url('dota2-background.gif') center/cover no-repeat;
-      filter: blur(3px) brightness(0.7);
+      filter: blur(5px) brightness(0.5); /* Increased blur, reduced brightness */
       z-index: 0;
+      transition: background 0.5s ease-in-out, filter 0.5s ease-in-out;
     }
     .overlay {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.6); /* Slightly lighter overlay */
       z-index: 1;
     }
     .container {
       position: relative;
       z-index: 2;
-      max-width: 1000px;
+      max-width: 1100px; /* Slightly wider container */
       margin: 0 auto;
-      padding: 20px;
+      padding: 30px; /* Increased padding */
     }
     .form-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 15px; /* Increased gap */
+      margin-bottom: 25px; /* Increased margin */
       align-items: center;
     }
-    input {
-      padding: 10px;
+    input, select, textarea {
+      padding: 12px; /* Increased padding */
       font-size: 1rem;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-      border-radius: 4px;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px; /* Slightly more rounded corners */
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      outline: none;
     }
     input::placeholder {
-      color: rgba(255,255,255,0.7);
+      color: var(--text-dark);
     }
     button {
-      padding: 10px 15px;
+      padding: 12px 20px; /* Increased padding */
       cursor: pointer;
-      background: #4a5568;
+      background: var(--accent-blue);
       color: white;
       border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      transition: all 0.2s;
+      border-radius: 6px;
+      font-weight: 600; /* Slightly bolder */
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 2px 5px var(--shadow-color);
     }
     button:hover {
-      background: #2d3748;
-      transform: translateY(-1px);
+      background: var(--accent-blue-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px var(--shadow-color);
     }
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px var(--shadow-color);
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
     .tabs {
       display: flex;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 5px;
     }
     .tab {
-      padding: 10px 15px;
-      background: rgba(255,255,255,0.1);
+      padding: 10px 18px; /* Increased padding */
+      background: transparent; /* Transparent background */
+      color: var(--text-dark);
       cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
-      font-weight: bold;
+      border-radius: 6px 6px 0 0; /* Rounded top corners */
+      transition: all 0.2s ease-in-out;
+      font-weight: 600;
+      border-bottom: 3px solid transparent; /* Underline effect */
     }
     .tab:hover {
-      background: rgba(255,255,255,0.2);
+      color: var(--text-light);
+      border-bottom-color: var(--accent-blue-hover);
     }
     .active-tab {
-      background: #4299e1;
-      font-weight: bold;
+      background: var(--bg-light); /* Slightly darker background for active tab */
+      color: var(--text-light);
+      border-bottom-color: var(--accent-blue); /* Active underline */
+      box-shadow: 0 -2px 8px var(--shadow-color);
     }
     .team {
-      margin: 20px 0;
-      padding: 15px;
-      background: rgba(0,0,0,0.4);
-      border-radius: 10px;
-      min-height: 150px;
-      border: 1px solid rgba(255,255,255,0.1);
+      margin: 25px 0;
+      padding: 20px; /* Increased padding */
+      background: var(--bg-medium);
+      border-radius: 12px; /* More rounded corners */
+      min-height: 180px; /* Increased min-height */
+      border: 1px solid var(--border-color);
+      box-shadow: 0 6px 15px var(--shadow-color);
+      transition: background 0.3s ease-in-out;
     }
     .player {
-      padding: 8px 12px;
-      margin: 5px 0;
-      border-radius: 5px;
+      padding: 10px 15px; /* Increased padding */
+      margin: 8px 0; /* Increased margin */
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: all 0.2s;
+      transition: all 0.2s ease-in-out;
+      font-size: 0.95rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     .player:hover {
-      transform: translateX(3px);
+      transform: translateX(5px); /* More pronounced hover effect */
+      background: rgba(255,255,255,0.08); /* Lighter hover background */
     }
-    .red { background-color: rgba(239, 68, 68, 0.8); }
-    .yellow { background-color: rgba(234, 179, 8, 0.8); color: #000; }
-    .green { background-color: rgba(34, 197, 94, 0.8); }
+    .red { background-color: rgba(220, 53, 69, 0.7); } /* Adjusted red */
+    .yellow { background-color: rgba(255, 193, 7, 0.7); color: #333; } /* Adjusted yellow, darker text */
+    .green { background-color: rgba(40, 167, 69, 0.7); } /* Adjusted green */
     .banned { 
-      background-color: rgba(0,0,0,0.8);
-      color: white;
-      font-weight: bold;
-      border: 1px solid #f00;
+      background-color: rgba(0,0,0,0.7);
+      color: var(--text-dark);
+      font-weight: 600;
+      border: 1px solid var(--accent-red);
+      box-shadow: 0 1px 5px var(--accent-red);
     }
     .queue-container {
-      margin-top: 30px;
-      background: rgba(0,0,0,0.4);
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
+      margin-top: 35px; /* Increased margin */
+      background: var(--bg-medium);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 6px 15px var(--shadow-color);
     }
     .queue-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 15px; /* Increased margin */
     }
     .queue-content {
-      max-height: 300px;
+      max-height: 350px; /* Increased max-height */
       overflow-y: auto;
+      padding-right: 10px; /* For scrollbar */
     }
+    .queue-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .queue-content::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+      border-radius: 10px;
+    }
+    .queue-content::-webkit-scrollbar-thumb {
+      background: var(--accent-blue);
+      border-radius: 10px;
+    }
+    .queue-content::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-blue-hover);
+    }
+
     .search-container {
-      margin: 15px 0;
+      margin: 20px 0;
     }
     #playerSearch {
-      width: 250px;
-      padding: 10px;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.2);
+      width: 300px; /* Wider search input */
+      padding: 12px;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px;
     }
     .player-list {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      max-height: 500px;
+      background: var(--bg-medium);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      max-height: 550px; /* Increased max-height */
       overflow-y: auto;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 10px var(--shadow-color);
     }
     .player-list-item {
-      padding: 10px;
-      margin: 5px 0;
+      padding: 12px;
+      margin: 8px 0;
       cursor: pointer;
-      border-radius: 5px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: rgba(255,255,255,0.05);
-      transition: all 0.2s;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     .player-list-item:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateX(3px);
     }
     .modal {
       display: none;
@@ -183,181 +258,309 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 100;
+      background: rgba(0, 0, 0, 0.85); /* Darker modal background */
+      z-index: 1000; /* Higher z-index */
       justify-content: center;
       align-items: center;
+      backdrop-filter: blur(5px); /* Blur behind modal */
     }
     .modal-content {
-      background: #1a202c;
-      padding: 25px;
-      border-radius: 10px;
-      width: 350px;
+      background: var(--bg-light); /* Darker background for modal content */
+      padding: 30px; /* Increased padding */
+      border-radius: 12px;
+      width: 400px; /* Wider modal */
       max-width: 90%;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 30px var(--shadow-color);
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .modal-content input, .modal-content textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: white;
-      border-radius: 4px;
+      width: calc(100% - 24px); /* Adjust for padding */
+      margin: 10px 0; /* Increased margin */
+      background: var(--bg-dark); /* Darker input background */
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px;
     }
     .modal-buttons {
       display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-      gap: 10px;
+      justify-content: flex-end; /* Align buttons to the right */
+      margin-top: 20px; /* Increased margin */
+      gap: 15px; /* Increased gap */
     }
     .modal-buttons button {
-      padding: 10px 15px;
-      flex: 1;
+      padding: 10px 20px;
+      flex: none; /* Don't stretch buttons */
     }
     button.danger {
-      background-color: #e53e3e;
-      color: white;
+      background-color: var(--accent-red);
     }
     button.danger:hover {
-      background-color: #c53030;
+      background-color: var(--accent-red-hover);
     }
     button.success {
-      background-color: #48bb78;
-      color: white;
+      background-color: var(--accent-green);
     }
     button.success:hover {
-      background-color: #38a169;
+      background-color: var(--accent-green-hover);
     }
     .team.highlight {
-      background: rgba(255, 255, 255, 0.1);
-      transition: background 0.2s;
+      background: rgba(255, 255, 255, 0.15); /* More visible highlight */
+      border-color: var(--accent-blue);
     }
     .player-status {
-      font-size: 0.9em;
-      margin-left: 8px;
-      color: white;
+      font-size: 0.85em; /* Slightly smaller */
+      margin-left: 10px;
+      color: var(--text-dark);
       opacity: 0.9;
+      font-weight: 500;
     }
-    .status-queue { color: #a0aec0; }
-    .status-team1 { color: #fc8181; }
-    .status-team2 { color: #68d391; }
-    .status-lobby1 { color: #63b3ed; }
-    .status-lobby2 { color: #f6ad55; }
-    .status-lobby3 { color: #b794f4; }
+    .status-queue { color: #9ca3af; } /* Gray */
+    .status-team1 { color: #f87171; } /* Light red */
+    .status-team2 { color: #6ee7b7; } /* Light green */
+    .status-lobby1 { color: #60a5fa; } /* Light blue */
+    .status-lobby2 { color: #fbbf24; } /* Orange */
+    .status-lobby3 { color: #a78bfa; } /* Purple */
     .filter-options {
-      margin: 15px 0;
+      margin: 20px 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 15px;
+      gap: 20px; /* Increased gap */
     }
     .filter-options label {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 8px; /* Increased gap */
       cursor: pointer;
       font-size: 0.95em;
+      color: var(--text-dark);
+      transition: color 0.2s;
     }
+    .filter-options label:hover {
+      color: var(--text-light);
+    }
+    .filter-options input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--bg-dark);
+      cursor: pointer;
+      position: relative;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .filter-options input[type="checkbox"]:checked {
+      background-color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+    .filter-options input[type="checkbox"]:checked::after {
+      content: '✔';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 12px;
+    }
+
     .queue-player-actions {
       display: flex;
-      gap: 8px;
+      gap: 10px; /* Increased gap */
+    }
+    .queue-player-actions button {
+      padding: 8px 12px; /* Smaller buttons for actions */
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--accent-blue);
+    }
+    .queue-player-actions button:hover {
+      transform: translateY(-1px);
     }
     .team-count {
-      font-size: 0.9em;
-      opacity: 0.9;
+      font-size: 0.85em;
+      opacity: 0.8;
       margin-left: 10px;
+      color: var(--text-dark);
     }
     .suggestions {
       position: absolute;
-      background: #2d3748;
-      border: 1px solid #4a5568;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
       max-height: 200px;
       overflow-y: auto;
       z-index: 10;
-      width: calc(100% - 16px);
+      width: calc(100% - 2px); /* Adjust for border */
       max-width: 300px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      top: calc(100% + 5px); /* Position below input */
+      left: 0;
     }
     .suggestion-item {
-      padding: 10px;
+      padding: 10px 12px;
       cursor: pointer;
-      transition: all 0.1s;
+      transition: all 0.15s ease-in-out;
+      color: var(--text-light);
+      font-size: 0.95rem;
     }
     .suggestion-item:hover {
-      background: #4a5568;
+      background: var(--bg-light);
     }
     .team-stats {
       display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-      font-size: 0.95em;
+      justify-content: space-around; /* Spread out stats */
+      margin-top: 15px; /* Increased margin */
+      font-size: 0.9rem;
       flex-wrap: wrap;
       gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
     }
     .team-stat {
-      background: rgba(0,0,0,0.3);
-      padding: 5px 10px;
-      border-radius: 4px;
+      background: var(--bg-dark); /* Darker background for stats */
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: var(--text-light);
+      font-weight: 500;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
     }
     .player-actions {
       display: flex;
-      gap: 8px;
+      gap: 10px;
+    }
+    .player-actions button {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--accent-blue);
+    }
+    .player-actions button:hover {
+      transform: translateY(-1px);
     }
     .sort-options {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin: 10px 0;
+      margin: 15px 0;
     }
     .sort-btn {
-      padding: 6px 12px;
+      padding: 8px 15px;
       font-size: 0.85em;
-      background: rgba(255,255,255,0.1);
+      background: var(--bg-medium);
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+    }
+    .sort-btn:hover {
+      background: var(--bg-light);
+      color: var(--text-light);
     }
     .sort-btn.active {
-      background: #4299e1;
+      background: var(--accent-blue);
+      color: white;
+      border-color: var(--accent-blue);
+      box-shadow: 0 2px 5px var(--shadow-color);
     }
     h1, h2, h3 {
-      color: white;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      color: var(--text-light);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6); /* More pronounced shadow */
+      margin-bottom: 20px;
     }
     h1 {
       margin-top: 0;
-      font-size: 2.2em;
+      font-size: 2.8em; /* Larger title */
+      font-weight: 700;
     }
     h2 {
-      font-size: 1.8em;
+      font-size: 2.2em;
+      font-weight: 600;
     }
     h3 {
-      font-size: 1.4em;
+      font-size: 1.6em;
       display: flex;
       align-items: center;
+      font-weight: 600;
+      color: var(--text-light);
     }
     .teams {
-      display: flex;
-      gap: 20px;
+      display: grid; /* Use grid for better layout control */
+      grid-template-columns: 1fr 1fr;
+      gap: 30px; /* Increased gap */
     }
+    canvas#balanceChart {
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-top: 25px;
+      box-shadow: 0 4px 10px var(--shadow-color);
+    }
+
+    @media (max-width: 992px) {
+      .teams {
+        grid-template-columns: 1fr; /* Stack teams on smaller screens */
+      }
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 2.4em;
+      }
+      h3 {
+        font-size: 1.4em;
+      }
+    }
+
     @media (max-width: 768px) {
       .form-group {
         flex-direction: column;
         align-items: stretch;
       }
-      .teams {
-        flex-direction: column;
-      }
-      .team-stats {
-        flex-direction: column;
-      }
-      .player-actions {
-        flex-direction: column;
-      }
-      input {
+      input, select, textarea, #playerSearch {
         width: 100%;
+        box-sizing: border-box; /* Include padding in width */
       }
       .modal-buttons {
         flex-direction: column;
+      }
+      .modal-buttons button {
+        width: 100%;
+      }
+      .player-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      .player-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .queue-player-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .queue-player-actions button {
+        flex-grow: 1;
+      }
+      .team-stats {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .team-stat {
+        width: 100%;
+        text-align: center;
+      }
+      .tabs {
+        justify-content: center;
+      }
+      .tab {
+        flex-grow: 1;
+        text-align: center;
       }
     }
   </style>
@@ -382,16 +585,15 @@
 
     <div id="mainPage">
       <h1 id="mainTitle">Dota 2 Team Balancer</h1>
-      <div id="playerList" style="position: relative; z-index: 2; margin-top: 100px; color: white;"></div>
       <div class="form-group">
-        <div style="position: relative;">
+        <div style="position: relative; flex-grow: 1; max-width: 300px;">
           <input type="text" id="name" placeholder="Nickname" oninput="showPlayerSuggestions()">
           <div class="suggestions" id="playerSuggestions" style="display: none;"></div>
         </div>
-        <input type="number" id="mmr" placeholder="Rating (MMR)">
-        <input type="number" id="bhv" placeholder="BHV (0-12000)">
-        <input type="number" id="trophyLevel" placeholder="Trophy Level">
-        <input type="text" id="friendId" placeholder="Friend ID">
+        <input type="number" id="mmr" placeholder="Rating (MMR)" style="flex-grow: 1; max-width: 150px;">
+        <input type="number" id="bhv" placeholder="BHV (0-12000)" style="flex-grow: 1; max-width: 150px;">
+        <input type="number" id="trophyLevel" placeholder="Trophy Level" style="flex-grow: 1; max-width: 150px;">
+        <input type="text" id="friendId" placeholder="Friend ID" style="flex-grow: 1; max-width: 150px;">
         <button onclick="addToQueue()" id="addToQueueBtn">Add to Queue</button>
         <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
         <button onclick="clearCurrentLobby()" class="danger" id="clearLobbyBtn">Clear Current Lobby</button>
@@ -479,8 +681,8 @@
     <div class="modal" id="settingsModal">
       <div class="modal-content">
         <h3 id="settingsTitle">Settings</h3>
-        <div class="form-group">
-          <label id="languageLabel">Language:</label>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label id="languageLabel" style="color: var(--text-light);">Language:</label>
           <select id="languageSelect" onchange="changeLanguage()">
             <option value="en">English</option>
             <option value="ru">Русский</option>
@@ -551,7 +753,8 @@
         sortMmrAsc: "MMR Low-High",
         sortMmrDesc: "MMR High-Low",
         sortBhvAsc: "BHV Low-High",
-        sortBhvDesc: "BHV High-Low"
+        sortBhvDesc: "BHV High-Low",
+        suggestSwap: "🔁 Suggest Swap"
       },
       ru: {
         title: "Балансировщик команд Dota 2",
@@ -591,7 +794,8 @@
         sortMmrAsc: "MMR Низ-Выс",
         sortMmrDesc: "MMR Выс-Низ",
         sortBhvAsc: "BHV Низ-Выс",
-        sortBhvDesc: "BHV Выс-Низ"
+        sortBhvDesc: "BHV Выс-Низ",
+        suggestSwap: "🔁 Предложить замену"
       }
     };
 
@@ -818,8 +1022,8 @@
         
         const actions = isQueue ? `
           <div class="queue-player-actions">
-            <button onclick="addToTeam('${source}', ${index}, 'team1')" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 1' : 'Команда 1'}</button>
-            <button onclick="addToTeam('${source}', ${index}, 'team2')" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Team 2' : 'Команда 2'}</button>
+            <button onclick="addToTeam('${source}', ${index}, 'team1')" ${p.banned ? 'disabled' : ''}>${translations[currentLanguage].team1}</button>
+            <button onclick="addToTeam('${source}', ${index}, 'team2')" ${p.banned ? 'disabled' : ''}>${translations[currentLanguage].team2}</button>
             <button onclick="kickPlayer('${source}', ${index}, ${isQueue})">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
           </div>
         ` : `
@@ -1114,13 +1318,21 @@
       // Update active sort button
       document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.textContent.includes(field === 'name' ? 'Name' : 
-                                     field === 'mmr' ? 'MMR' : 
-                                     field === 'bhv' ? 'BHV' : '') &&
-            btn.textContent.includes(direction === 'asc' ? 'A-Z' : 
-                                    direction === 'asc' ? 'Low-High' : 
-                                    direction === 'desc' ? 'Z-A' : 'High-Low')) {
-          btn.classList.add('active');
+        const btnText = btn.textContent.toLowerCase();
+        const fieldMap = {
+          'name': 'name',
+          'mmr': 'mmr',
+          'bhv': 'bhv'
+        };
+        const dirMap = {
+          'asc': ['a-z', 'low-high'],
+          'desc': ['z-a', 'high-low']
+        };
+
+        if (btnText.includes(fieldMap[field])) {
+          if (dirMap[direction].some(d => btnText.includes(d))) {
+            btn.classList.add('active');
+          }
         }
       });
     }
@@ -1196,8 +1408,8 @@
           </div>
           <div>MMR: ${player.mmr} | BHV: ${player.bhv} | Trophy: ${player.trophyLevel || 0}</div>
           <div class="player-actions">
-            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'Add to Queue' : 'В очередь'}</button>
-            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">${currentLanguage === 'en' ? 'Edit' : 'Ред.'}</button>
+            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>${translations[currentLanguage].addToQueue}</button>
+            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">${translations[currentLanguage].editPlayer.substring(0, 4)}.</button>
           </div>
         `;
         playerElement.ondblclick = () => {
@@ -1272,10 +1484,10 @@
       
       const banButton = document.getElementById("banButton");
       if (player.banned) {
-        banButton.textContent = currentLanguage === 'en' ? "Unban" : "Разбанить";
+        banButton.textContent = translations[currentLanguage].unban;
         banButton.className = "success";
       } else {
-        banButton.textContent = currentLanguage === 'en' ? "Ban" : "Забанить";
+        banButton.textContent = translations[currentLanguage].ban;
         banButton.className = "danger";
       }
       
@@ -1407,6 +1619,8 @@
       document.getElementById("queueTitle").innerHTML = `${lang.globalQueue} <span class="team-count">(<span id="queueCount">0</span>)</span>`;
       document.getElementById("createLobbyBtn").textContent = lang.createLobby;
       document.getElementById("clearQueueBtn").textContent = lang.clearQueue;
+      document.querySelector('#mainPage .form-group button[onclick="suggestBetterSwap()"]').textContent = lang.suggestSwap;
+
 
       // All players page
       document.getElementById("allPlayersTitle").textContent = lang.allPlayers;
@@ -1521,34 +1735,42 @@
         try {
           const data = JSON.parse(e.target.result);
           if (Array.isArray(data)) {
-            players = data;
+            // Clear existing players to avoid duplicates when loading
+            allPlayers = []; 
+            players = data; // 'players' is a temporary variable used in renderPlayerList
             renderPlayerList();
           } else {
-            alert("Файл не содержит список игроков.");
+            alert(currentLanguage === 'en' ? "File does not contain a list of players." : "Файл не содержит список игроков.");
           }
         } catch (err) {
-          alert("Ошибка загрузки файла: " + err.message);
+          alert((currentLanguage === 'en' ? "Error loading file: " : "Ошибка загрузки файла: ") + err.message);
         }
       };
       reader.readAsText(file);
     }
 
     function renderPlayerList() {
-      const list = document.getElementById('playerList');
-      list.innerHTML = '';
+      const list = document.getElementById('playerList'); // This element is not used for displaying the loaded list, but for a temporary message
+      list.innerHTML = ''; // Clear previous message
       let added = 0, skipped = 0;
 
       players.forEach(player => {
-        if (typeof player.mmr === 'number' && typeof player.bhv === 'number') {
-          const div = document.createElement('div');
-          const trophy = player.trophyLevel || 0;
-          div.textContent = `${player.name} — MMR: ${player.mmr}, BHV: ${player.bhv}, Trophy: ${trophy}`;
-          list.appendChild(div);
-          added++;
-
+        // Ensure player data is valid before adding
+        if (player.name && typeof player.mmr === 'number' && typeof player.bhv === 'number') {
           const exists = allPlayers.find(p => p.name === player.name || (p.friendId && p.friendId === player.friendId));
           if (!exists) {
             allPlayers.push({...player});
+            added++;
+          } else {
+            // Optionally update existing player data if loaded data is newer/more complete
+            exists.mmr = player.mmr;
+            exists.bhv = player.bhv;
+            exists.trophyLevel = player.trophyLevel || 0;
+            exists.friendId = player.friendId || '';
+            exists.note = player.note || '';
+            exists.banned = player.banned || false;
+            exists.lastSeen = player.lastSeen || new Date().toLocaleDateString();
+            added++; // Count as added/updated
           }
         } else {
           skipped++;
@@ -1556,9 +1778,10 @@
       });
 
       saveToLocalStorage();
-      updatePlayersList();
+      updatePlayersList(); // Refresh the 'All Players' page
+      renderLobby(); // Refresh the current lobby
 
-      alert(`✅ Добавлено игроков: ${added}\n❌ Не удалось добавить: ${skipped}`);
+      alert(`${currentLanguage === 'en' ? '✅ Players added/updated: ' : '✅ Добавлено/обновлено игроков: '}${added}\n${currentLanguage === 'en' ? '❌ Skipped (invalid data): ' : '❌ Пропущено (неверные данные): '}${skipped}`);
     }
 
     function suggestBetterSwap() {
@@ -1593,18 +1816,21 @@
 
       if (bestSwap) {
         alert(
-          `🔁 Предлагается обмен:\n\n` +
+          `${currentLanguage === 'en' ? '🔁 Suggested Swap:\n\n' : '🔁 Предлагается обмен:\n\n'}` +
           `➡️ ${bestSwap[0].name} (Team 1) ⇄ ${bestSwap[1].name} (Team 2)\n\n` +
-          `⚖️ Это улучшит баланс MMR + BHV.`
+          `${currentLanguage === 'en' ? '⚖️ This will improve MMR + BHV balance.' : '⚖️ Это улучшит баланс MMR + BHV.'}`
         );
       } else {
-        alert("Не удалось найти подходящую замену.");
+        alert(currentLanguage === 'en' ? "Could not find a suitable swap." : "Не удалось найти подходящую замену.");
       }
     }
 
     function changeBackground() {
       const value = document.getElementById('backgroundPicker').value;
       const bgDiv = document.getElementById('dynamicBackground');
+
+      // Reset filter for custom backgrounds
+      bgDiv.style.filter = 'blur(5px) brightness(0.5)';
 
       if (value === 'red-blur') {
         bgDiv.style.background = 'radial-gradient(circle, rgba(255,0,0,0.6), rgba(0,0,0,0.8))';
@@ -1618,7 +1844,7 @@
       } else if (value === 'gradient') {
         bgDiv.style.background = 'linear-gradient(135deg, #1f4037, #99f2c8)';
         bgDiv.style.backgroundSize = 'cover';
-        bgDiv.style.filter = 'blur(8px)';
+        bgDiv.style.filter = 'blur(8px) brightness(0.6)'; /* More blur for gradient */
       } else {
         bgDiv.style.background = `url('${value}') center/cover no-repeat`;
       }
@@ -1646,10 +1872,18 @@
       const padX = 50;
       const padY = 40;
 
-      const scaleX = mmr => padX + ((mmr - minMMR) / (maxMMR - minMMR)) * (canvas.width - padX * 1.5);
-      const scaleY = bhv => canvas.height - padY - ((bhv - minBHV) / (maxBHV - minBHV)) * (canvas.height - padY * 1.5);
+      // Add some padding to min/max for better visualization
+      const rangeMMR = (maxMMR - minMMR) || 1;
+      const rangeBHV = (maxBHV - minBHV) || 1;
+      const scaledMinMMR = minMMR - rangeMMR * 0.1;
+      const scaledMaxMMR = maxMMR + rangeMMR * 0.1;
+      const scaledMinBHV = minBHV - rangeBHV * 0.1;
+      const scaledMaxBHV = maxBHV + rangeBHV * 0.1;
 
-      ctx.strokeStyle = '#444';
+      const scaleX = mmr => padX + ((mmr - scaledMinMMR) / (scaledMaxMMR - scaledMinMMR)) * (canvas.width - padX * 1.5);
+      const scaleY = bhv => canvas.height - padY - ((bhv - scaledMinBHV) / (scaledMaxBHV - scaledMinBHV)) * (canvas.height - padY * 1.5);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)'; /* Lighter grid lines */
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = 0; i <= 5; i++) {
@@ -1664,8 +1898,8 @@
       }
       ctx.stroke();
 
-      ctx.fillStyle = '#ccc';
-      ctx.font = '12px Arial';
+      ctx.fillStyle = 'var(--text-dark)'; /* Axis labels color */
+      ctx.font = '12px Inter';
       ctx.fillText("MMR →", canvas.width - padX, canvas.height - 10);
       ctx.fillText("↑ BHV", 10, padY - 10);
 
@@ -1674,16 +1908,19 @@
         const y = scaleY(p.bhv);
         ctx.beginPath();
         ctx.fillStyle = color;
-        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.arc(x, y, 7, 0, 2 * Math.PI); /* Slightly larger dots */
         ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-        ctx.fillStyle = '#fff';
-        ctx.font = '11px Arial';
-        ctx.fillText(`${p.mmr}/${p.bhv}`, x + 8, y - 4);
+        ctx.fillStyle = 'white';
+        ctx.font = '11px Inter';
+        ctx.fillText(`${p.mmr}/${p.bhv}`, x + 10, y - 4); /* Offset text */
       }
 
-      team1.forEach(p => drawPlayer(p, 'red'));
-      team2.forEach(p => drawPlayer(p, 'limegreen'));
+      team1.forEach(p => drawPlayer(p, 'var(--accent-red)')); /* Use CSS variable for color */
+      team2.forEach(p => drawPlayer(p, 'var(--accent-green)')); /* Use CSS variable for color */
     }
 
     function hideBalanceChart() {
@@ -1706,4 +1943,3 @@
 </div>
 </body>
 </html>
-
