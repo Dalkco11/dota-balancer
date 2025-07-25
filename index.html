@@ -702,10 +702,19 @@
   </style>
 </head>
 <body>
-  <!-- Settings button in top right corner -->
-  <button class="settings-button" onclick="openSettingsModal()" title="Настройки">
-    ⚙️
-  </button>
+    <!-- Settings button in top right corner -->
+    <button class="settings-button" onclick="openSettingsModal()" title="Настройки">
+      ⚙️
+    </button>
+    
+    <!-- Calculator and Donate buttons -->
+    <button class="settings-button" onclick="openBhvCalculator()" title="Калькулятор порядочности" style="top: 80px;">
+      📊
+    </button>
+    
+    <button class="settings-button" onclick="openDonateModal()" title="Донат разработчику" style="top: 140px; background: linear-gradient(135deg, #ff6b6b, #ffd93d);">
+      💰
+    </button>
   
   <!-- Hidden file input for loading -->
   <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadPlayers(event)">
@@ -736,20 +745,67 @@
     А зря! 😏
   </div>
   
-  <!-- Balancer Confirmation Modal -->
-  <div class="modal" id="balancerConfirmModal">
-    <div class="modal-content">
-      <h3 style="color: var(--accent-blue); text-align: center;">⚠️ Подтверждение выбора</h3>
-      <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
-        Ну разраб же не дурак, он шарит что версия разраба лучше<br>
-        и надо подтвердить выбор
-      </div>
-      <div class="modal-buttons">
-        <button onclick="confirmBalancerChange()" class="success">Подтвердить</button>
-        <button onclick="cancelBalancerChange()" id="stayDeveloperBtn">Остаться на версии Разработчика</button>
+    <!-- Balancer Confirmation Modal -->
+    <div class="modal" id="balancerConfirmModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-blue); text-align: center;">⚠️ Подтверждение выбора</h3>
+        <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
+          Ну разраб же не дурак, он шарит что версия разраба лучше<br>
+          и надо подтвердить выбор
+        </div>
+        <div class="modal-buttons">
+          <button onclick="confirmBalancerChange()" class="success">Подтвердить</button>
+          <button onclick="cancelBalancerChange()" id="stayDeveloperBtn">Остаться на версии Разработчика</button>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- BHV Calculator Modal -->
+    <div class="modal" id="bhvCalculatorModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-blue); text-align: center;">📊 Калькулятор порядочности</h3>
+        <div style="color: var(--text-light); margin: 20px 0;">
+          <div class="form-group">
+            <label style="color: var(--text-light);">Было (текущая порядочность):</label>
+            <input type="number" id="bhvStart" placeholder="0-12000" min="0" max="12000">
+          </div>
+          <div class="form-group">
+            <label style="color: var(--text-light);">Стало (желаемая порядочность):</label>
+            <input type="number" id="bhvEnd" placeholder="0-12000" min="0" max="12000">
+          </div>
+          <div id="bhvResult" style="margin-top: 20px; padding: 15px; background: var(--bg-dark); border-radius: 8px; display: none;">
+            <div id="bhvResultContent"></div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="calculateBhv()" class="success">Рассчитать</button>
+          <button onclick="closeBhvCalculator()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Donate Modal -->
+    <div class="modal" id="donateModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-green); text-align: center;">💰 Поддержать разработчика</h3>
+        <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
+          <p>👋 Привет! Я разработчик этого сайта для балансировки команд Dota 2.</p>
+          <p>Если вам нравится мой проект и вы хотите поддержать его развитие, 
+             я буду очень благодарен за вашу поддержку!</p>
+          <p>💡 Ваш донат поможет:</p>
+          <ul style="text-align: left; margin: 15px 0;">
+            <li>Добавлять новые функции</li>
+            <li>Улучшать производительность</li>
+            <li>Исправлять баги быстрее</li>
+            <li>Добавлять новые языки</li>
+          </ul>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="openDonateLink()" class="success">💳 Задонатить</button>
+          <button onclick="closeDonateModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>
   
   <div id="playerList" style="position: relative; z-index: 2; margin-top: 100px; color: white;"></div>
   <div id="dynamicBackground" class="background"></div>
@@ -2274,6 +2330,88 @@
     function hideBalanceChart() {
       document.getElementById('balanceChart').style.display = 'none';
       document.getElementById('hideChartBtn').style.display = 'none';
+    }
+
+    // BHV Calculator functions
+    function openBhvCalculator() {
+      document.getElementById('bhvCalculatorModal').style.display = 'flex';
+    }
+
+    function closeBhvCalculator() {
+      document.getElementById('bhvCalculatorModal').style.display = 'none';
+      document.getElementById('bhvResult').style.display = 'none';
+    }
+
+    function calculateBhv() {
+      const start = parseInt(document.getElementById('bhvStart').value);
+      const end = parseInt(document.getElementById('bhvEnd').value);
+      
+      if (isNaN(start) || isNaN(end)) {
+        alert('Пожалуйста, введите корректные числа');
+        return;
+      }
+      
+      if (start >= end) {
+        alert('Значение "Было" должно быть меньше значения "Стало"');
+        return;
+      }
+
+      // Calculator logic from main.py
+      const needed = end - start;
+      let totalGames = 0;
+
+      // Zones: (from, to, reward per game)
+      const zones = [
+        [0, 3000, 800 / 15],
+        [3000, 7500, 400 / 15],
+        [7500, 12000, 200 / 15]
+      ];
+
+      let current = start;
+
+      for (const [zoneStart, zoneEnd, gainPerGame] of zones) {
+        if (current >= zoneEnd) continue;
+        
+        const zoneFrom = Math.max(current, zoneStart);
+        const zoneTo = Math.min(end, zoneEnd);
+        
+        if (zoneTo > zoneFrom) {
+          const diff = zoneTo - zoneFrom;
+          const games = Math.ceil(diff / gainPerGame);
+          totalGames += games;
+          current = zoneTo;
+        }
+      }
+
+      totalGames = Math.max(totalGames, 0);
+      const tables = Math.ceil(totalGames / 15);
+
+      const resultDiv = document.getElementById('bhvResult');
+      const resultContent = document.getElementById('bhvResultContent');
+      
+      resultContent.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 1.2em; margin-bottom: 10px;">📈 Надо апнуть: <strong>${needed}</strong> порядочности</div>
+          <div style="font-size: 1.1em; margin-bottom: 10px;">🎮 Примерно игр нужно: <strong>${totalGames}</strong></div>
+          <div style="font-size: 1.1em;">📋 Табличек нужно: <strong>${tables}</strong></div>
+        </div>
+      `;
+      
+      resultDiv.style.display = 'block';
+    }
+
+    // Donate functions
+    function openDonateModal() {
+      document.getElementById('donateModal').style.display = 'flex';
+    }
+
+    function closeDonateModal() {
+      document.getElementById('donateModal').style.display = 'none';
+    }
+
+    function openDonateLink() {
+      window.open('https://funpay.com/lots/offer?id=41171783', '_blank');
+      closeDonateModal();
     }
   </script>
 </body>
