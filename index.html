@@ -834,8 +834,8 @@
         <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
         <button onclick="clearCurrentLobby()" class="danger" id="clearLobbyBtn">Clear Current Lobby</button>
       </div>
-      <canvas id="balanceChart" width="600" height="400" style="background: rgba(0,0,0,0.5); border: 1px solid #888; border-radius: 10px; margin-top: 20px; display: none;"></canvas>
-      <button onclick="hideBalanceChart()" id="hideChartBtn" style="display: none; margin-top: 10px;">Скрыть график</button>
+    <!-- Removed balance chart -->
+    <!-- Removed balance chart button -->
       <div class="teams">
         <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
           <h3 id="team1Title">Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
@@ -943,13 +943,13 @@
         </div>
         
         <!-- Balancer Selection -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label id="balancerLabel" style="color: var(--text-light);">Balancer:</label>
-          <select id="balancerSelect" onchange="changeBalancer()">
-            <option value="developer" selected>Developer Balancer</option>
-            <option value="kolton">Kolton's Balancer</option>
-          </select>
-        </div>
+      <!-- Removed balancer selection -->
+      <!-- Removed developer balancer option -->
+      <!-- Kolton's balancer is now default and only balancer -->
+
+      <!-- Removed balancer selection -->
+      <!-- Removed developer balancer option -->
+      <!-- Kolton's balancer is now default and only balancer -->
         
         <!-- Data Management -->
         <div class="form-group" style="margin-bottom: 20px;">
@@ -1395,11 +1395,8 @@
     }
 
     function balanceTeams() {
-      if (currentBalancer === 'kolton') {
-        balanceTeamsKolton();
-      } else {
-        balanceTeamsDeveloper();
-      }
+      // Kolton's balancer is now the only balancer
+      balanceTeamsKolton();
     }
 
     function balanceTeamsDeveloper() {
@@ -2356,15 +2353,16 @@
         return;
       }
 
-      // Calculator logic from main.py
+      // Updated calculator logic with new values
       const needed = end - start;
       let totalGames = 0;
 
-      // Zones: (from, to, reward per game)
+      // Updated zones: (from, to, reward per game)
       const zones = [
-        [0, 3000, 800 / 15],
-        [3000, 7500, 400 / 15],
-        [7500, 12000, 200 / 15]
+        [0, 3000, 750 / 15],
+        [3000, 5000, 500 / 15],
+        [5000, 7500, 375 / 15],
+        [7500, 12000, 225 / 15]
       ];
 
       let current = start;
