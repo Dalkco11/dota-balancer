@@ -776,7 +776,13 @@
           
           <!-- Playlist -->
           <div style="background: var(--bg-medium); padding: 15px; border-radius: 12px;">
-            <h4 style="color: var(--text-light); margin-bottom: 10px;">Плейлист</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="color: var(--text-light); margin: 0;">Плейлист</h4>
+              <div style="display: flex; gap: 5px;">
+                <button onclick="reloadPlaylist()" style="padding: 5px 10px; font-size: 12px; background: var(--accent-blue);">🔄 Обновить</button>
+                <button onclick="uploadMusic()" style="padding: 5px 10px; font-size: 12px; background: var(--accent-green);">📁 Загрузить</button>
+              </div>
+            </div>
             <div id="playlist" style="max-height: 200px; overflow-y: auto;">
               <!-- Dynamic playlist will be populated here -->
             </div>
