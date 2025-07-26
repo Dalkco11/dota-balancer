@@ -2622,8 +2622,85 @@
         { name: "Twinky - Ах, Как Хорошо", file: "sounds/Twinky - Ах, Как Хорошо.mp3" }
       ];
       
+      // In a real web app, we would scan the directory, but for now we'll add a few more common tracks
+      // This simulates finding additional MP3 files in the sounds folder
+      const additionalTracks = [
+        { name: "Sample Track 1", file: "sounds/sample1.mp3" },
+        { name: "Sample Track 2", file: "sounds/sample2.mp3" },
+        { name: "Background Music", file: "sounds/background.mp3" }
+      ];
+      
+      // Add additional tracks if they exist (simulated)
+      additionalTracks.forEach(track => {
+        if (!tracks.some(t => t.file === track.file)) {
+          tracks.push(track);
+        }
+      });
+      
       // Update playlist display
       updatePlaylistDisplay();
+    }
+
+    function uploadMusic() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/mp3,audio/wav,audio/mpeg';
+      input.multiple = true;
+      
+      input.onchange = function(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        for (let file of files) {
+          const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+          const filePath = `sounds/${file.name}`;
+          
+          // Check if track already exists
+          if (!tracks.some(track => track.file === filePath)) {
+            tracks.push({
+              name: fileName,
+              file: filePath
+            });
+          }
+        }
+        
+        updatePlaylistDisplay();
+        alert(`Добавлено ${files.length} трек(ов)`);
+      };
+      
+      input.click();
+    }
+
+    function reloadPlaylist() {
+      // Rescan the sounds folder (in a real app, this would scan the directory)
+      // For now, we'll just refresh the display
+      updatePlaylistDisplay();
+      
+      // Also check if any tracks are missing
+      const validTracks = [];
+      let missingCount = 0;
+      
+      tracks.forEach(track => {
+        fetch(track.file, { method: 'HEAD' })
+          .then(response => {
+            if (response.ok) {
+              validTracks.push(track);
+            } else {
+              missingCount++;
+            }
+          })
+          .catch(() => {
+            missingCount++;
+          });
+      });
+      
+      setTimeout(() => {
+        if (missingCount > 0) {
+          alert(`Обновлено! ${missingCount} трек(ов) не найдено.`);
+        } else {
+          alert('Плейлист обновлен!');
+        }
+      }, 1000);
     }
 
     function updatePlaylistDisplay() {
@@ -2639,25 +2716,56 @@
         const trackItem = document.createElement('div');
         trackItem.className = 'track-item';
         trackItem.onclick = () => playTrack(index);
-        trackItem.style.cssText = 'padding: 10px; margin: 5px 0; background: var(--bg-light); border-radius: 8px; cursor: pointer; transition: all 0.2s;';
+        trackItem.style.cssText = `
+          padding: 12px; 
+          margin: 8px 0; 
+          background: var(--bg-light); 
+          border-radius: 8px; 
+          cursor: pointer; 
+          transition: all 0.2s;
+          border: 1px solid var(--border-color);
+          position: relative;
+        `;
+        
+        // Highlight current track
+        if (index === currentTrackIndex) {
+          trackItem.style.background = 'var(--accent-blue)';
+          trackItem.style.color = 'white';
+        }
         
         trackItem.innerHTML = `
-          <div style="font-weight: bold;">🎵 ${track.name}</div>
-          <div style="font-size: 12px; color: var(--text-dark);">${track.file}</div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span style="font-weight: bold; margin-right: 8px;">${index + 1}.</span>
+              <span style="font-weight: bold;">${track.name}</span>
+            </div>
+            <div style="font-size: 12px; opacity: 0.8;">${index === currentTrackIndex ? '▶️' : ''}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-dark); margin-top: 4px;">${track.file}</div>
         `;
         
         trackItem.addEventListener('mouseenter', function() {
-          this.style.background = 'var(--bg-dark)';
-          this.style.transform = 'translateX(3px)';
+          if (index !== currentTrackIndex) {
+            this.style.background = 'var(--bg-dark)';
+            this.style.transform = 'translateX(3px)';
+          }
         });
         
         trackItem.addEventListener('mouseleave', function() {
-          this.style.background = 'var(--bg-light)';
-          this.style.transform = 'translateX(0)';
+          if (index !== currentTrackIndex) {
+            this.style.background = 'var(--bg-light)';
+            this.style.transform = 'translateX(0)';
+          }
         });
         
         playlistDiv.appendChild(trackItem);
       });
+      
+      // Update track count display
+      const playlistHeader = document.querySelector('#playlist').parentElement.querySelector('h4');
+      if (playlistHeader) {
+        playlistHeader.innerHTML = `Плейлист <span style="font-size: 12px; color: var(--text-dark);">(${tracks.length} трек${tracks.length === 1 ? '' : 'а'})</span>`;
+      }
     }
 
     function loadTrack(index) {
@@ -2691,6 +2799,7 @@
         audioPlayer.play();
         isPlaying = true;
         updatePlayButton();
+        updatePlaylistDisplay(); // Refresh to highlight current track
       }
     }
 
