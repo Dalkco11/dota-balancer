@@ -1,0 +1,2911 @@
+<!DOCTYPE Cpp>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dota 2 Team Balancer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #1a1a2e;
+      --bg-medium: #16213e;
+      --bg-light: #0f3460;
+      --text-light: #e0e0e0;
+      --text-dark: #a0a0a0;
+      --accent-blue: #007bff;
+      --accent-blue-hover: #0056b3;
+      --accent-green: #28a745;
+      --accent-green-hover: #218838;
+      --accent-red: #dc3545;
+      --accent-red-hover: #c82333;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      color: var(--text-light);
+      background-color: var(--bg-dark); /* Fallback */
+    }
+    .background {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('dota2-background.gif') center/cover no-repeat;
+      filter: blur(5px) brightness(0.5); /* Increased blur, reduced brightness */
+      z-index: 0;
+      transition: background 0.5s ease-in-out, filter 0.5s ease-in-out;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); /* Slightly lighter overlay */
+      z-index: 1;
+    }
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 1100px; /* Slightly wider container */
+      margin: 0 auto;
+      padding: 30px; /* Increased padding */
+    }
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px; /* Increased gap */
+      margin-bottom: 25px; /* Increased margin */
+      align-items: center;
+    }
+    input, select, textarea {
+      padding: 12px; /* Increased padding */
+      font-size: 1rem;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px; /* Slightly more rounded corners */
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      outline: none;
+    }
+    input::placeholder {
+      color: var(--text-dark);
+    }
+    button {
+      padding: 12px 20px; /* Increased padding */
+      cursor: pointer;
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600; /* Slightly bolder */
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 2px 5px var(--shadow-color);
+    }
+    button:hover {
+      background: var(--accent-blue-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px var(--shadow-color);
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px var(--shadow-color);
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 5px;
+    }
+    .tab {
+      padding: 10px 18px; /* Increased padding */
+      background: transparent; /* Transparent background */
+      color: var(--text-dark);
+      cursor: pointer;
+      border-radius: 6px 6px 0 0; /* Rounded top corners */
+      transition: all 0.2s ease-in-out;
+      font-weight: 600;
+      border-bottom: 3px solid transparent; /* Underline effect */
+    }
+    .tab:hover {
+      color: var(--text-light);
+      border-bottom-color: var(--accent-blue-hover);
+    }
+    .active-tab {
+      background: var(--bg-light); /* Slightly darker background for active tab */
+      color: var(--text-light);
+      border-bottom-color: var(--accent-blue); /* Active underline */
+      box-shadow: 0 -2px 8px var(--shadow-color);
+    }
+    .team {
+      margin: 25px 0;
+      padding: 20px; /* Increased padding */
+      background: var(--bg-medium);
+      border-radius: 12px; /* More rounded corners */
+      min-height: 180px; /* Increased min-height */
+      border: 1px solid var(--border-color);
+      box-shadow: 0 6px 15px var(--shadow-color);
+      transition: background 0.3s ease-in-out;
+    }
+    .player {
+      padding: 10px 15px; /* Increased padding */
+      margin: 8px 0; /* Increased margin */
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease-in-out;
+      font-size: 0.95rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .player:hover {
+      transform: translateX(5px); /* More pronounced hover effect */
+      background: rgba(255,255,255,0.08); /* Lighter hover background */
+    }
+    .red { background-color: rgba(220, 53, 69, 0.7); } /* Adjusted red */
+    .yellow { background-color: rgba(255, 193, 7, 0.7); color: #333; } /* Adjusted yellow, darker text */
+    .green { background-color: rgba(40, 167, 69, 0.7); } /* Adjusted green */
+    .banned { 
+      background-color: rgba(0,0,0,0.7);
+      color: var(--text-dark);
+      font-weight: 600;
+      border: 1px solid var(--accent-red);
+      box-shadow: 0 1px 5px var(--accent-red);
+    }
+    .queue-container {
+      margin-top: 35px; /* Increased margin */
+      background: var(--bg-medium);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 6px 15px var(--shadow-color);
+    }
+    .queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px; /* Increased margin */
+    }
+    .queue-content {
+      max-height: 350px; /* Increased max-height */
+      overflow-y: auto;
+      padding-right: 10px; /* For scrollbar */
+    }
+    .queue-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .queue-content::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+      border-radius: 10px;
+    }
+    .queue-content::-webkit-scrollbar-thumb {
+      background: var(--accent-blue);
+      border-radius: 10px;
+    }
+    .queue-content::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-blue-hover);
+    }
+
+    .search-container {
+      margin: 20px 0;
+    }
+    #playerSearch {
+      width: 300px; /* Wider search input */
+      padding: 12px;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px;
+    }
+    .player-list {
+      background: var(--bg-medium);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      max-height: 550px; /* Increased max-height */
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 10px var(--shadow-color);
+    }
+    .player-list-item {
+      padding: 12px;
+      margin: 8px 0;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .player-list-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateX(3px);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85); /* Darker modal background */
+      z-index: 1000; /* Higher z-index */
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(5px); /* Blur behind modal */
+    }
+    .modal-content {
+      background: var(--bg-light); /* Darker background for modal content */
+      padding: 30px; /* Increased padding */
+      border-radius: 12px;
+      width: 400px; /* Wider modal */
+      max-width: 90%;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 30px var(--shadow-color);
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-content input, .modal-content textarea {
+      width: calc(100% - 24px); /* Adjust for padding */
+      margin: 10px 0; /* Increased margin */
+      background: var(--bg-dark); /* Darker input background */
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+      border-radius: 6px;
+    }
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end; /* Align buttons to the right */
+      margin-top: 20px; /* Increased margin */
+      gap: 15px; /* Increased gap */
+    }
+    .modal-buttons button {
+      padding: 10px 20px;
+      flex: none; /* Don't stretch buttons */
+    }
+    button.danger {
+      background-color: var(--accent-red);
+    }
+    button.danger:hover {
+      background-color: var(--accent-red-hover);
+    }
+    button.success {
+      background-color: var(--accent-green);
+    }
+    button.success:hover {
+      background-color: var(--accent-green-hover);
+    }
+    .team.highlight {
+      background: rgba(255, 255, 255, 0.15); /* More visible highlight */
+      border-color: var(--accent-blue);
+    }
+    .player-status {
+      font-size: 0.85em; /* Slightly smaller */
+      margin-left: 10px;
+      color: var(--text-dark);
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    .status-queue { color: #9ca3af; } /* Gray */
+    .status-team1 { color: #f87171; } /* Light red */
+    .status-team2 { color: #6ee7b7; } /* Light green */
+    .status-lobby1 { color: #60a5fa; } /* Light blue */
+    .status-lobby2 { color: #fbbf24; } /* Orange */
+    .status-lobby3 { color: #a78bfa; } /* Purple */
+    .filter-options {
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px; /* Increased gap */
+    }
+    .filter-options label {
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Increased gap */
+      cursor: pointer;
+      font-size: 0.95em;
+      color: var(--text-dark);
+      transition: color 0.2s;
+    }
+    .filter-options label:hover {
+      color: var(--text-light);
+    }
+    .filter-options input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--bg-dark);
+      cursor: pointer;
+      position: relative;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .filter-options input[type="checkbox"]:checked {
+      background-color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+    .filter-options input[type="checkbox"]:checked::after {
+      content: '✔';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 12px;
+    }
+
+    .queue-player-actions {
+      display: flex;
+      gap: 10px; /* Increased gap */
+    }
+    .queue-player-actions button {
+      padding: 8px 12px; /* Smaller buttons for actions */
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--accent-blue);
+    }
+    .queue-player-actions button:hover {
+      transform: translateY(-1px);
+    }
+    .team-count {
+      font-size: 0.85em;
+      opacity: 0.8;
+      margin-left: 10px;
+      color: var(--text-dark);
+    }
+    .suggestions {
+      position: absolute;
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      width: calc(100% - 2px); /* Adjust for border */
+      max-width: 300px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      top: calc(100% + 5px); /* Position below input */
+      left: 0;
+    }
+    .suggestion-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+    .suggestion-item:hover {
+      background: var(--bg-light);
+    }
+    .team-stats {
+      display: flex;
+      justify-content: space-around; /* Spread out stats */
+      margin-top: 15px; /* Increased margin */
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+    }
+    .team-stat {
+      background: var(--bg-dark); /* Darker background for stats */
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: var(--text-light);
+      font-weight: 500;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .player-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .player-actions button {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--accent-blue);
+    }
+    .player-actions button:hover {
+      transform: translateY(-1px);
+    }
+    .sort-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .sort-btn {
+      padding: 8px 15px;
+      font-size: 0.85em;
+      background: var(--bg-medium);
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+    }
+    .sort-btn:hover {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+    .sort-btn.active {
+      background: var(--accent-blue);
+      color: white;
+      border-color: var(--accent-blue);
+      box-shadow: 0 2px 5px var(--shadow-color);
+    }
+    h1, h2, h3 {
+      color: var(--text-light);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6); /* More pronounced shadow */
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2.8em; /* Larger title */
+      font-weight: 700;
+    }
+    h2 {
+      font-size: 2.2em;
+      font-weight: 600;
+    }
+    h3 {
+      font-size: 1.6em;
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    .teams {
+      display: grid; /* Use grid for better layout control */
+      grid-template-columns: 1fr 1fr;
+      gap: 30px; /* Increased gap */
+    }
+    canvas#balanceChart {
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-top: 25px;
+      box-shadow: 0 4px 10px var(--shadow-color);
+    }
+
+    /* Settings button in top right corner */
+    .settings-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: var(--bg-medium);
+      color: var(--text-light);
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2em;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .settings-button:hover {
+      background: var(--bg-light);
+      transform: rotate(90deg);
+      box-shadow: 0 6px 16px var(--shadow-color);
+    }
+
+    /* Promo modal styles */
+    .promo-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .promo-content {
+      background: linear-gradient(135deg, var(--bg-light), var(--bg-medium));
+      padding: 40px;
+      border-radius: 20px;
+      width: 500px;
+      max-width: 90%;
+      border: 2px solid var(--accent-blue);
+      box-shadow: 0 20px 60px rgba(0, 123, 255, 0.3);
+      animation: promoFadeIn 0.5s ease-out;
+      text-align: center;
+    }
+
+    @keyframes promoFadeIn {
+      from { opacity: 0; transform: scale(0.8) translateY(-50px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .promo-title {
+      color: var(--accent-blue);
+      font-size: 1.8em;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 10px rgba(0, 123, 255, 0.5);
+    }
+
+    .promo-text {
+      color: var(--text-light);
+      font-size: 1.1em;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .promo-price {
+      color: var(--accent-green);
+      font-size: 2em;
+      font-weight: 700;
+      margin: 20px 0;
+      text-shadow: 0 2px 10px rgba(40, 167, 69, 0.5);
+    }
+
+    .promo-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .promo-btn {
+      padding: 15px 30px;
+      font-size: 1.1em;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .promo-btn.order {
+      background: linear-gradient(135deg, var(--accent-green), #20c997);
+      color: white;
+      border: none;
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .promo-btn.order:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.6);
+    }
+
+    .promo-btn.decline {
+      background: transparent;
+      color: var(--text-dark);
+      border: 2px solid var(--text-dark);
+    }
+
+    .promo-btn.decline:hover {
+      background: var(--accent-red);
+      color: white;
+      border-color: var(--accent-red);
+      transform: translateY(-2px);
+    }
+
+    .rejection-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--accent-red), #dc3545);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 15px;
+      font-size: 1.5em;
+      font-weight: 700;
+      z-index: 3000;
+      box-shadow: 0 10px 30px rgba(220, 53, 69, 0.5);
+      animation: rejectionPulse 3s ease-in-out;
+      display: none;
+    }
+
+    @keyframes rejectionPulse {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    }
+
+    @keyframes cloudFloat {
+      0%, 100% { transform: translateY(0px) rotate(-2deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+
+    @keyframes cloudPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @media (max-width: 992px) {
+      .teams {
+        grid-template-columns: 1fr; /* Stack teams on smaller screens */
+      }
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 2.4em;
+      }
+      h3 {
+        font-size: 1.4em;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .form-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      input, select, textarea, #playerSearch {
+        width: 100%;
+        box-sizing: border-box; /* Include padding in width */
+      }
+      .modal-buttons {
+        flex-direction: column;
+      }
+      .modal-buttons button {
+        width: 100%;
+      }
+      .player-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+      .player-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .queue-player-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .queue-player-actions button {
+        flex-grow: 1;
+      }
+      .team-stats {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .team-stat {
+        width: 100%;
+        text-align: center;
+      }
+      .tabs {
+        justify-content: center;
+      }
+      .tab {
+        flex-grow: 1;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+    <!-- Settings button in top right corner -->
+    <button class="settings-button" onclick="openSettingsModal()" title="Настройки">
+      ⚙️
+    </button>
+    
+    <!-- Calculator and Donate buttons -->
+    <button class="settings-button" onclick="openBhvCalculator()" title="Калькулятор порядочности" style="top: 60px;">
+      📊
+    </button>
+    
+    <button class="settings-button" onclick="openDonateModal()" title="Донат разработчику" style="top: 110px; background: linear-gradient(135deg, #ff6b6b, #ffd93d);">
+      💰
+    </button>
+    
+    <!-- Current track display -->
+    <div id="currentTrackDisplay" style="position: fixed; top: 160px; right: 20px; background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 1001; display: none; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">
+      <span id="currentTrackNameDisplay">Нет музыки</span>
+    </div>
+    
+    <!-- Special Offer button -->
+    <button class="settings-button" onclick="showPromoModal()" title="Специальное предложение" style="top: 190px; background: linear-gradient(135deg, #007bff, #00d4ff); border-radius: 50%;">
+      🎯
+    </button>
+    
+    <!-- Audio Player button -->
+    <button class="settings-button" onclick="toggleAudioPlayer()" title="Аудиоплеер" style="top: 240px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 50%;">
+      🎵
+    </button>
+    
+    <!-- Audio Player Modal -->
+    <div class="modal" id="audioPlayerModal">
+      <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 style="color: #8b5cf6; text-align: center;">🎵 Аудиоплеер</h3>
+        <div style="margin: 20px 0;">
+          <!-- Custom Audio Player -->
+          <div style="background: var(--bg-dark); padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+            <div style="text-align: center; margin-bottom: 15px;">
+              <div id="currentTrackName" style="font-size: 16px; font-weight: bold; color: var(--text-light); margin-bottom: 10px;">Нет музыки</div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                <button onclick="previousTrack()" style="background: var(--bg-medium); border: none; color: var(--text-light); font-size: 20px; cursor: pointer; padding: 10px; border-radius: 50%;">⏮️</button>
+                <button onclick="togglePlayPause()" id="playPauseBtn" style="background: var(--accent-green); border: none; color: white; font-size: 24px; cursor: pointer; padding: 15px; border-radius: 50%; width: 60px; height: 60px;">▶️</button>
+                <button onclick="nextTrack()" style="background: var(--bg-medium); border: none; color: var(--text-light); font-size: 20px; cursor: pointer; padding: 10px; border-radius: 50%;">⏭️</button>
+              </div>
+            </div>
+            
+            <!-- Progress bar -->
+            <div style="margin-bottom: 15px;">
+              <input type="range" id="progressBar" min="0" max="100" value="0" style="width: 100%; margin-bottom: 5px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dark);">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+              </div>
+            </div>
+            
+            <!-- Volume control -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="color: var(--text-dark);">🔊</span>
+              <input type="range" id="volumeSlider" min="0" max="100" value="70" style="flex: 1;">
+              <span id="volumeValue">70%</span>
+            </div>
+          </div>
+          
+          <!-- Playlist -->
+          <div style="background: var(--bg-medium); padding: 15px; border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="color: var(--text-light); margin: 0;">Плейлист</h4>
+              <div style="display: flex; gap: 5px;">
+                <button onclick="reloadPlaylist()" style="padding: 5px 10px; font-size: 12px; background: var(--accent-blue);">🔄 Обновить</button>
+                <button onclick="uploadMusic()" style="padding: 5px 10px; font-size: 12px; background: var(--accent-green);">📁 Загрузить</button>
+              </div>
+            </div>
+            <div id="playlist" style="max-height: 200px; overflow-y: auto;">
+              <!-- Dynamic playlist will be populated here -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="closeAudioPlayer()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Animated cloud for special offer -->
+    <div id="promoCloud" style="position: fixed; top: 150px; right: 70px; background: linear-gradient(135deg, #fff, #f0f8ff); color: #333; padding: 10px 15px; border-radius: 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); font-size: 13px; font-weight: bold; z-index: 1001; display: none; animation: cloudFloat 3s ease-in-out infinite; pointer-events: none; border: 2px solid #007bff;">
+      <span id="cloudText">Тыкни меня! 🎯</span>
+    </div>
+  
+  <!-- Hidden file input for loading -->
+  <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadPlayers(event)">
+  
+  <!-- Promo Modal -->
+  <div class="promo-modal" id="promoModal">
+    <div class="promo-content">
+      <h2 class="promo-title">🎯 Специальное предложение!</h2>
+      <div class="promo-text">
+        Не желаете ли заказать <strong>отмыв порядочности</strong> от разработчика данного сайта?<br>
+        Повысьте свою репутацию в игровом сообществе!
+      </div>
+      <div class="promo-price">1000₽ за 1000 порядочности</div>
+      <div class="promo-text">
+        ⭐ Быстро и качественно<br>
+        ⭐ Гарантия результата<br>
+        ⭐ Конфиденциально
+      </div>
+      <div class="promo-buttons">
+        <a href="https://funpay.com/users/12018098/" target="_blank" class="promo-btn order" onclick="closePromoModal()">💳 Заказать</a>
+        <button class="promo-btn decline" onclick="declineOffer()">❌ Отказаться</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Rejection Message -->
+  <div class="rejection-message" id="rejectionMessage">
+    А зря! 😏
+  </div>
+  
+    <!-- Balancer Confirmation Modal -->
+    <div class="modal" id="balancerConfirmModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-blue); text-align: center;">⚠️ Подтверждение выбора</h3>
+        <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
+          Ну разраб же не дурак, он шарит что версия разраба лучше<br>
+          и надо подтвердить выбор
+        </div>
+        <div class="modal-buttons">
+          <button onclick="confirmBalancerChange()" class="success">Подтвердить</button>
+          <button onclick="cancelBalancerChange()" id="stayDeveloperBtn">Остаться на версии Разработчика</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BHV Calculator Modal -->
+    <div class="modal" id="bhvCalculatorModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-blue); text-align: center;">📊 Калькулятор порядочности</h3>
+        <div style="color: var(--text-light); margin: 20px 0;">
+          <div class="form-group">
+            <label style="color: var(--text-light);">Было (текущая порядочность):</label>
+            <input type="number" id="bhvStart" placeholder="0-12000" min="0" max="12000">
+          </div>
+          <div class="form-group">
+            <label style="color: var(--text-light);">Стало (желаемая порядочность):</label>
+            <input type="number" id="bhvEnd" placeholder="0-12000" min="0" max="12000">
+          </div>
+          <div id="bhvResult" style="margin-top: 20px; padding: 15px; background: var(--bg-dark); border-radius: 8px; display: none;">
+            <div id="bhvResultContent"></div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="calculateBhv()" class="success">Рассчитать</button>
+          <button onclick="closeBhvCalculator()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Donate Modal -->
+    <div class="modal" id="donateModal">
+      <div class="modal-content">
+        <h3 style="color: var(--accent-green); text-align: center;">💰 Поддержать разработчика</h3>
+        <div style="color: var(--text-light); text-align: center; margin: 20px 0; line-height: 1.6;">
+          <p>👋 Привет! Я разработчик этого сайта для балансировки команд Dota 2.</p>
+          <p>Если вам нравится мой проект и вы хотите поддержать его развитие, 
+             я буду очень благодарен за вашу поддержку!</p>
+          <p>💡 Ваш донат поможет:</p>
+          <ul style="text-align: left; margin: 15px 0;">
+            <li>Добавлять новые функции</li>
+            <li>Улучшать производительность</li>
+            <li>Исправлять баги быстрее</li>
+            <li>Добавлять новые языки</li>
+          </ul>
+        </div>
+        <div class="modal-buttons">
+          <button onclick="openDonateLink()" class="success">💳 Задонатить</button>
+          <button onclick="closeDonateModal()">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  
+  <div id="playerList" style="position: relative; z-index: 2; margin-top: 100px; color: white;"></div>
+  <div id="dynamicBackground" class="background"></div>
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active-tab" onclick="switchLobby(0)">Lobby 1</div>
+      <div class="tab" onclick="switchLobby(1)">Lobby 2</div>
+      <div class="tab" onclick="switchLobby(2)">Lobby 3</div>
+      <div class="tab" onclick="showAllPlayersPage()">All Players</div>
+      <button class="tab" onclick="openSettingsModal()" style="margin-left: auto;">⚙️ Settings</button>
+    </div>
+
+    <div id="mainPage">
+      <h1 id="mainTitle">Dota 2 Team Balancer</h1>
+      <div class="form-group">
+        <div style="position: relative; flex-grow: 1; max-width: 300px;">
+          <input type="text" id="name" placeholder="Nickname" oninput="showPlayerSuggestions()">
+          <div class="suggestions" id="playerSuggestions" style="display: none;"></div>
+        </div>
+        <input type="number" id="mmr" placeholder="Rating (MMR)" style="flex-grow: 1; max-width: 150px;">
+        <input type="number" id="bhv" placeholder="BHV (0-12000)" style="flex-grow: 1; max-width: 150px;">
+        <input type="number" id="trophyLevel" placeholder="Trophy Level" style="flex-grow: 1; max-width: 150px;">
+        <input type="text" id="friendId" placeholder="Friend ID" style="flex-grow: 1; max-width: 150px;">
+        <button onclick="addToQueue()" id="addToQueueBtn">Add to Queue</button>
+        <button onclick="moveAllToLobby()" id="moveAllBtn">Move All to Lobby</button>
+        <button onclick="clearCurrentLobby()" class="danger" id="clearLobbyBtn">Clear Current Lobby</button>
+      </div>
+    <!-- Removed balance chart -->
+    <!-- Removed balance chart button -->
+      <div class="teams">
+        <div class="team" id="team1" ondragover="allowDrop(event)" ondrop="drop(event, 'team1')" ondragleave="clearHighlight(event)">
+          <h3 id="team1Title">Team 1 <span class="team-count">(<span id="team1Count">0</span>/5)</span></h3>
+          <div id="team1Players"></div>
+          <div class="team-stats" id="team1Stats"></div>
+        </div>
+
+        <div class="team" id="team2" ondragover="allowDrop(event)" ondrop="drop(event, 'team2')" ondragleave="clearHighlight(event)">
+          <h3 id="team2Title">Team 2 <span class="team-count">(<span id="team2Count">0</span>/5)</span></h3>
+          <div id="team2Players"></div>
+          <div class="team-stats" id="team2Stats"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <button onclick="balanceTeams()" id="balanceBtn">Balance Teams</button>
+        <button onclick="suggestBetterSwap()">🔁 Предложить замену</button>
+      </div>
+
+      <div class="queue-container">
+        <div class="queue-header">
+          <h3 id="queueTitle">Global Queue <span class="team-count">(<span id="queueCount">0</span>)</span></h3>
+          <div>
+            <button onclick="createBestLobby()" style="margin-right: 10px;" id="createLobbyBtn">Create Best Lobby</button>
+            <button onclick="clearQueue()" class="danger" id="clearQueueBtn">Clear Queue</button>
+          </div>
+        </div>
+        <div class="queue-content" id="waitingList" ondragover="allowDrop(event)" ondrop="drop(event, 'queue')" ondragleave="clearHighlight(event)"></div>
+      </div>
+    </div>
+
+    <div id="allPlayersPage" style="display: none;">
+      <h1 id="allPlayersTitle">All Players</h1>
+      <div class="search-container">
+        <input type="text" id="playerSearch" placeholder="Search player..." oninput="searchPlayer()">
+      </div>
+      <div class="filter-options">
+        <label><input type="checkbox" id="hideInLobby" checked onchange="updatePlayersList()"> <span id="hideInLobbyLabel">Hide players in lobbies</span></label>
+        <label><input type="checkbox" id="hideInQueue" onchange="updatePlayersList()"> <span id="hideInQueueLabel">Hide players in queue</span></label>
+        <label><input type="checkbox" id="hideOffline" onchange="updatePlayersList()"> <span id="hideOfflineLabel">Hide offline players</span></label>
+        <label><input type="checkbox" id="showBannedOnly" onchange="updatePlayersList()"> <span id="showBannedLabel">Show banned only</span></label>
+        <label><input type="checkbox" id="bhvFilter1" onchange="updatePlayersList()"> <span id="bhvFilter1Label">0-5000 BHV</span></label>
+        <label><input type="checkbox" id="bhvFilter2" onchange="updatePlayersList()"> <span id="bhvFilter2Label">5000-7500 BHV</span></label>
+        <label><input type="checkbox" id="bhvFilter3" onchange="updatePlayersList()"> <span id="bhvFilter3Label">7500+ BHV</span></label>
+      </div>
+      <div class="sort-options">
+        <button class="sort-btn" onclick="sortPlayers('name', 'asc')" id="sortNameAsc">Name A-Z</button>
+        <button class="sort-btn" onclick="sortPlayers('name', 'desc')" id="sortNameDesc">Name Z-A</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'asc')" id="sortMmrAsc">MMR Low-High</button>
+        <button class="sort-btn" onclick="sortPlayers('mmr', 'desc')" id="sortMmrDesc">MMR High-Low</button>
+        <button class="sort-btn" onclick="sortPlayers('bhv', 'asc')" id="sortBhvAsc">BHV Low-High</button>
+        <button class="sort-btn" onclick="sortPlayers('bhv', 'desc')" id="sortBhvDesc">BHV High-Low</button>
+      </div>
+      <div class="player-list" id="allPlayersList">
+        <div id="playersListContent"></div>
+      </div>
+      <button onclick="showMainPage()" id="backToLobbyBtn">Back to Lobby</button>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+      <div class="modal-content">
+        <h3 id="editPlayerTitle">Edit Player</h3>
+        <input type="text" id="editName" placeholder="Nickname">
+        <input type="number" id="editMMR" placeholder="MMR">
+        <input type="number" id="editBHV" placeholder="BHV">
+        <input type="number" id="editTrophyLevel" placeholder="Trophy Level">
+        <input type="text" id="editFriendId" placeholder="Friend ID">
+        <textarea id="editNote" placeholder="Notes..." rows="3"></textarea>
+        <div class="modal-buttons">
+          <button onclick="savePlayerChanges()" id="savePlayerBtn">Save</button>
+          <button onclick="closeModal()" id="cancelEditBtn">Cancel</button>
+          <button id="banButton" class="danger" onclick="toggleBanPlayer()">Ban</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal-content">
+        <h3 id="settingsTitle">Settings</h3>
+        
+        <!-- Language Settings -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label id="languageLabel" style="color: var(--text-light);">Language:</label>
+          <select id="languageSelect" onchange="changeLanguage()">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </div>
+        
+        <!-- Background Settings -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label id="backgroundLabel" style="color: var(--text-light);">Background:</label>
+          <select id="backgroundPicker" onchange="changeBackground()">
+            <option value="dota2-background.jpg">Dota Static</option>
+            <option value="dota2-background.gif" selected>Dota Animated</option>
+            <option value="red-blur">Red Blur</option>
+            <option value="black-blur">Black Blur</option>
+            <option value="white-blur">White Blur</option>
+            <option value="starscape.jpg">Starscape</option>
+            <option value="cyberpunk.jpg">Cyberpunk</option>
+            <option value="gradient">Gradient Blur</option>
+          </select>
+        </div>
+        
+        <!-- Balancer Selection -->
+      <!-- Removed balancer selection -->
+      <!-- Removed developer balancer option -->
+      <!-- Kolton's balancer is now default and only balancer -->
+
+      <!-- Removed balancer selection -->
+      <!-- Removed developer balancer option -->
+      <!-- Kolton's balancer is now default and only balancer -->
+        
+        <!-- Data Management -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="color: var(--text-light); margin-bottom: 10px; display: block;" id="dataLabel">Data Management:</label>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="downloadPlayers()" id="downloadBtn">💾 Download Players</button>
+            <button onclick="document.getElementById('loadFile').click()" id="loadBtn">📂 Load Players</button>
+          </div>
+        </div>
+        
+        <div class="modal-buttons">
+          <button onclick="closeSettingsModal()" id="closeSettingsBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const lobbies = [
+      { team1: [], team2: [] },
+      { team1: [], team2: [] },
+      { team1: [], team2: [] }
+    ];
+    let globalQueue = [];
+    let allPlayers = [];
+    let currentLobby = 0;
+    let currentlyEditedPlayer = null;
+    let currentSort = { field: 'name', direction: 'asc' };
+    let currentLanguage = 'en';
+    let currentBalancer = 'developer';
+    let bhvFilters = {
+      '0-5000': false,
+      '5000-7500': false,
+      '7500-12000': false
+    };
+
+    // Translations
+    const translations = {
+      en: {
+        title: "Dota 2 Team Balancer",
+        nickname: "Nickname",
+        rating: "Rating (MMR)",
+        bhv: "BHV (0-12000)",
+        trophyLevel: "Trophy Level",
+        friendId: "Friend ID",
+        addToQueue: "Add to Queue",
+        moveAllToLobby: "Move All to Lobby",
+        clearLobby: "Clear Current Lobby",
+        team1: "Team 1",
+        team2: "Team 2",
+        balanceTeams: "Balance Teams",
+        globalQueue: "Global Queue",
+        createLobby: "Create Best Lobby",
+        clearQueue: "Clear Queue",
+        allPlayers: "All Players",
+        hideInLobby: "Hide players in lobbies",
+        hideInQueue: "Hide players in queue",
+        hideOffline: "Hide offline players",
+        showBanned: "Show banned only",
+        bhvFilter1: "0-5000 BHV",
+        bhvFilter2: "5000-7500 BHV",
+        bhvFilter3: "7500+ BHV",
+        backToLobby: "Back to Lobby",
+        editPlayer: "Edit Player",
+        save: "Save",
+        cancel: "Cancel",
+        ban: "Ban",
+        unban: "Unban",
+        settings: "Settings",
+        language: "Language:",
+        close: "Close",
+        sortNameAsc: "Name A-Z",
+        sortNameDesc: "Name Z-A",
+        sortMmrAsc: "MMR Low-High",
+        sortMmrDesc: "MMR High-Low",
+        sortBhvAsc: "BHV Low-High",
+        sortBhvDesc: "BHV High-Low",
+        suggestSwap: "🔁 Suggest Swap",
+        background: "Background:",
+        dataManagement: "Data Management:",
+        downloadPlayers: "💾 Download Players",
+        loadPlayers: "📂 Load Players",
+        balancer: "Balancer:",
+        developerBalancer: "Developer Balancer",
+        koltonBalancer: "Kolton's Balancer"
+      },
+      ru: {
+        title: "Балансировщик команд Dota 2",
+        nickname: "Никнейм",
+        rating: "Рейтинг (MMR)",
+        bhv: "BHV (0-12000)",
+        trophyLevel: "Уровень трофея",
+        friendId: "Friend ID",
+        addToQueue: "Добавить в очередь",
+        moveAllToLobby: "Переместить всех в лобби",
+        clearLobby: "Очистить текущее лобби",
+        team1: "Команда 1",
+        team2: "Команда 2",
+        balanceTeams: "Сбалансировать команды",
+        globalQueue: "Глобальная очередь",
+        createLobby: "Создать лучшее лобби",
+        clearQueue: "Очистить очередь",
+        allPlayers: "Все игроки",
+        hideInLobby: "Скрыть игроков в лобби",
+        hideInQueue: "Скрыть игроков в очереди",
+        hideOffline: "Скрыть оффлайн игроков",
+        showBanned: "Только забаненные",
+        bhvFilter1: "0-5000 BHV",
+        bhvFilter2: "5000-7500 BHV",
+        bhvFilter3: "7500+ BHV",
+        backToLobby: "Назад в лобби",
+        editPlayer: "Редактировать игрока",
+        save: "Сохранить",
+        cancel: "Отмена",
+        ban: "Забанить",
+        unban: "Разбанить",
+        settings: "Настройки",
+        language: "Язык:",
+        close: "Закрыть",
+        sortNameAsc: "Имя А-Я",
+        sortNameDesc: "Имя Я-А",
+        sortMmrAsc: "MMR Низ-Выс",
+        sortMmrDesc: "MMR Выс-Низ",
+        sortBhvAsc: "BHV Низ-Выс",
+        sortBhvDesc: "BHV Выс-Низ",
+        suggestSwap: "🔁 Предложить замену",
+        background: "Фон:",
+        dataManagement: "Управление данными:",
+        downloadPlayers: "💾 Скачать игроков",
+        loadPlayers: "📂 Загрузить игроков",
+        balancer: "Балансировщик:",
+        developerBalancer: "Балансировщик разработчика",
+        koltonBalancer: "Балансировщик Колтона"
+      }
+    };
+
+    function switchLobby(index) {
+      currentLobby = index;
+      document.querySelectorAll('.tab').forEach((el, i) => {
+        el.classList.toggle('active-tab', i === index);
+      });
+      renderLobby();
+    }
+
+    function showAllPlayersPage() {
+      document.getElementById('mainPage').style.display = 'none';
+      document.getElementById('allPlayersPage').style.display = 'block';
+      updatePlayersList();
+    }
+
+    function showMainPage() {
+      document.getElementById('mainPage').style.display = 'block';
+      document.getElementById('allPlayersPage').style.display = 'none';
+      renderLobby();
+    }
+
+    function getColor(bhv) {
+      if (bhv < 5000) return 'red';
+      if (bhv < 7500) return 'yellow';
+      return 'green';
+    }
+
+    function getPlayerStatus(player) {
+      for (let i = 0; i < lobbies.length; i++) {
+        if (lobbies[i].team1.some(p => p.name === player.name)) {
+          return `Lobby ${i+1} Team 1`;
+        }
+        if (lobbies[i].team2.some(p => p.name === player.name)) {
+          return `Lobby ${i+1} Team 2`;
+        }
+      }
+      if (globalQueue.some(p => p.name === player.name)) {
+        return 'In Queue';
+      }
+      return player.lastSeen ? `Offline (last seen: ${player.lastSeen})` : 'Offline';
+    }
+
+    function getStatusClass(status) {
+      if (status === 'In Queue') return 'status-queue';
+      if (status.includes('Team 1')) return 'status-team1';
+      if (status.includes('Team 2')) return 'status-team2';
+      if (status.includes('Lobby 1')) return 'status-lobby1';
+      if (status.includes('Lobby 2')) return 'status-lobby2';
+      if (status.includes('Lobby 3')) return 'status-lobby3';
+      return '';
+    }
+
+    function showPlayerSuggestions() {
+      const input = document.getElementById('name').value.toLowerCase();
+      if (!input) {
+        document.getElementById('playerSuggestions').style.display = 'none';
+        return;
+      }
+
+      const suggestions = allPlayers
+        .filter(p => !p.banned && p.name.toLowerCase().includes(input) && !globalQueue.some(q => q.name === p.name) && !lobbies.some(l => l.team1.concat(l.team2).some(t => t.name === p.name)))
+        .slice(0, 5);
+
+      const suggestionsDiv = document.getElementById('playerSuggestions');
+      suggestionsDiv.innerHTML = '';
+      
+      if (suggestions.length === 0) {
+        suggestionsDiv.style.display = 'none';
+        return;
+      }
+
+      suggestions.forEach(player => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.textContent = `${player.name} (MMR: ${player.mmr}, BHV: ${player.bhv}, Trophy: ${player.trophyLevel || 0})`;
+        div.onclick = () => {
+          document.getElementById('name').value = player.name;
+          document.getElementById('mmr').value = player.mmr;
+          document.getElementById('bhv').value = player.bhv;
+          document.getElementById('trophyLevel').value = player.trophyLevel || '';
+          document.getElementById('friendId').value = player.friendId || '';
+          suggestionsDiv.style.display = 'none';
+        };
+        suggestionsDiv.appendChild(div);
+      });
+
+      suggestionsDiv.style.display = 'block';
+    }
+
+    function addToQueue() {
+      const name = document.getElementById('name').value;
+      const mmr = parseInt(document.getElementById('mmr').value);
+      const bhv = parseInt(document.getElementById('bhv').value);
+      const trophyLevel = parseInt(document.getElementById('trophyLevel').value) || 0;
+      const friendId = document.getElementById('friendId').value;
+      
+      if (!name || isNaN(mmr) || isNaN(bhv) || trophyLevel < 0) return;
+
+      // Check if player is banned
+      const bannedPlayer = allPlayers.find(p => (p.friendId && p.friendId === friendId && p.banned) || 
+                     (p.name === name && p.banned));
+      if (bannedPlayer) {
+        alert(currentLanguage === 'en' ? "This player is banned and cannot be added" : "Этот игрок забанен и не может быть добавлен");
+        return;
+      }
+
+      const alreadyInGame = lobbies.some(lobby =>
+        lobby.team1.concat(lobby.team2).some(p => p.name === name)
+      );
+      if (alreadyInGame) {
+        alert(currentLanguage === 'en' ? "Player is already in one of the lobbies" : "Игрок уже в одном из лобби");
+        return;
+      }
+
+      const alreadyInQueue = globalQueue.some(p => p.name === name);
+      if (alreadyInQueue) {
+        alert(currentLanguage === 'en' ? "Player is already in queue" : "Игрок уже в очереди");
+        return;
+      }
+
+      const player = { name, mmr, bhv, trophyLevel, friendId, lastSeen: new Date().toLocaleDateString() };
+      globalQueue.unshift(player);
+      
+      // Add to all players list if not exists
+      const existingPlayer = allPlayers.find(p => p.name === name || (friendId && p.friendId === friendId));
+      if (!existingPlayer) {
+        allPlayers.push({...player});
+      } else {
+        // Update existing player data
+        existingPlayer.mmr = mmr;
+        existingPlayer.bhv = bhv;
+        existingPlayer.trophyLevel = trophyLevel;
+        existingPlayer.friendId = friendId;
+        existingPlayer.lastSeen = new Date().toLocaleDateString();
+      }
+
+      renderLobby();
+      saveToLocalStorage();
+      
+      // Clear input fields
+      document.getElementById('name').value = '';
+      document.getElementById('mmr').value = '';
+      document.getElementById('bhv').value = '';
+      document.getElementById('trophyLevel').value = '';
+      document.getElementById('friendId').value = '';
+      document.getElementById('playerSuggestions').style.display = 'none';
+    }
+
+    function moveAllToLobby() {
+      const lobby = lobbies[currentLobby];
+      const sorted = [...globalQueue].sort((a, b) => a.mmr - b.mmr);
+      globalQueue = [];
+      lobby.team1 = [];
+      lobby.team2 = [];
+      
+      // Distribute players with MMR priority
+      sorted.forEach((p, i) => {
+        if (i % 2 === 0) {
+          lobby.team1.push(p);
+        } else {
+          lobby.team2.push(p);
+        }
+      });
+      
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+      ev.target.classList.add('highlight');
+    }
+
+    function clearHighlight(ev) {
+      ev.target.classList.remove('highlight');
+    }
+
+    function drag(ev, source, index) {
+      ev.dataTransfer.setData("text", JSON.stringify({ source, index }));
+    }
+
+    function drop(ev, target) {
+      ev.preventDefault();
+      const data = JSON.parse(ev.dataTransfer.getData("text"));
+      
+      let player;
+      if (data.source === 'queue') {
+        player = globalQueue.splice(data.index, 1)[0];
+      } else {
+        player = lobbies[currentLobby][data.source].splice(data.index, 1)[0];
+      }
+      
+      // Check if player is banned
+      if (player.banned) {
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to teams or queue" : "Забаненные игроки не могут быть добавлены в команды или очередь");
+        globalQueue.push(player); // Return to queue
+        renderLobby();
+        ev.target.classList.remove('highlight');
+        return;
+      }
+      
+      if (target === 'queue') {
+        globalQueue.push(player);
+      } else {
+        lobbies[currentLobby][target].push(player);
+      }
+      
+      renderLobby();
+      saveToLocalStorage();
+      ev.target.classList.remove('highlight');
+    }
+
+    function renderLobby() {
+      function createPlayerElement(p, source, index, isQueue = false) {
+        const el = document.createElement('div');
+        el.className = `player ${p.banned ? 'banned' : getColor(p.bhv)}`;
+        el.draggable = !p.banned;
+        if (!p.banned) {
+          el.ondragstart = (e) => drag(e, source, index);
+        }
+        el.ondblclick = () => openEditModal(p, { source, index, isQueue });
+        
+        const actions = isQueue ? `
+          <div class="queue-player-actions">
+            <button onclick="addToTeam('${source}', ${index}, 'team1')" ${p.banned ? 'disabled' : ''}>${translations[currentLanguage].team1}</button>
+            <button onclick="addToTeam('${source}', ${index}, 'team2')" ${p.banned ? 'disabled' : ''}>${translations[currentLanguage].team2}</button>
+            <button onclick="kickPlayer('${source}', ${index}, ${isQueue})">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
+          </div>
+        ` : `
+          <div>
+            <button onclick="kickPlayer('${source}', ${index}, ${isQueue})">${currentLanguage === 'en' ? 'Kick' : 'Удалить'}</button>
+            <button onclick="moveToQueue('${source}', ${index})" ${p.banned ? 'disabled' : ''}>${currentLanguage === 'en' ? 'To Queue' : 'В очередь'}</button>
+          </div>
+        `;
+        
+        el.innerHTML = `
+          <div>${p.name} | MMR: ${p.mmr} | BHV: ${p.bhv} | Trophy: ${p.trophyLevel || 0} ${p.banned ? '| BANNED' : ''}</div>
+          ${actions}
+        `;
+        return el;
+      }
+      
+      const lobby = lobbies[currentLobby];
+
+      // Render teams
+      ["team1", "team2"].forEach(team => {
+        const div = document.getElementById(`${team}Players`);
+        div.innerHTML = '';
+        lobby[team].forEach((p, i) => {
+          const el = createPlayerElement(p, team, i);
+          div.appendChild(el);
+        });
+
+        // Update team count
+        document.getElementById(`${team}Count`).textContent = lobby[team].length;
+
+        const sum = arr => arr.reduce((sum, x) => sum + x, 0);
+        const activePlayers = lobby[team].filter(p => !p.banned);
+        const sumMMR = sum(activePlayers.map(p => p.mmr));
+        const sumBHV = sum(activePlayers.map(p => p.bhv));
+        const avgMMR = (sumMMR / (activePlayers.length || 1)).toFixed(1);
+        const avgBHV = (sumBHV / (activePlayers.length || 1)).toFixed(1);
+
+        const trophyLevels = activePlayers.map(p => p.trophyLevel || 0);
+        const minTrophy = trophyLevels.length > 0 ? Math.min(...trophyLevels) : 0;
+        const maxTrophy = trophyLevels.length > 0 ? Math.max(...trophyLevels) : 0;
+
+        const statsDiv = document.getElementById(`${team}Stats`);
+        statsDiv.innerHTML = `
+          <div class="team-stats">
+            <span class="team-stat">Avg MMR: ${avgMMR}</span>
+            <span class="team-stat">Avg BHV: ${avgBHV}</span>
+            <span class="team-stat">Sum MMR: ${sumMMR}</span>
+            <span class="team-stat">Sum BHV: ${sumBHV}</span>
+            <span class="team-stat">Trophy Range: ${minTrophy} - ${maxTrophy}</span>
+          </div>
+        `;
+      });
+
+      // Render queue
+      const queueDiv = document.getElementById('waitingList');
+      queueDiv.innerHTML = '';
+      globalQueue.forEach((p, i) => {
+        const el = createPlayerElement(p, 'queue', i, true);
+        queueDiv.appendChild(el);
+      });
+
+      // Update queue count
+      document.getElementById('queueCount').textContent = globalQueue.length;
+    }
+
+    function addToTeam(source, index, targetTeam) {
+      if (source !== 'queue') return;
+      
+      const player = globalQueue.splice(index, 1)[0];
+      
+      // Check if player is banned
+      if (player.banned) {
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to teams" : "Забаненные игроки не могут быть добавлены в команды");
+        globalQueue.splice(index, 0, player); // Return to original position
+        renderLobby();
+        return;
+      }
+      
+      lobbies[currentLobby][targetTeam].push(player);
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function balanceTeams() {
+      try {
+        // Kolton's balancer is now the only balancer
+        balanceTeamsKolton();
+      } catch (error) {
+        console.error('Error in balanceTeams:', error);
+        alert(currentLanguage === 'en' ? 'Error balancing teams. Please check console for details.' : 'Ошибка при балансировке команд. Проверьте консоль для деталей.');
+      }
+    }
+
+    function balanceTeamsDeveloper() {
+      const lobby = lobbies[currentLobby];
+
+      // Collect only unbanned players from both teams
+      let players = [...lobby.team1, ...lobby.team2].filter(p => !p.banned);
+
+      // We want exactly 10 players 5v5, so if we have less, try to fill from queue
+      if (players.length < 10) {
+        const needed = 10 - players.length;
+        const fromQueue = globalQueue.filter(p => !p.banned).slice(0, needed);
+        players = players.concat(fromQueue);
+        // Remove added players from globalQueue
+        globalQueue = globalQueue.filter(p => !fromQueue.includes(p));
+      } else if (players.length > 10) {
+        // If more than 10, take best 10 by MMR descending (for demo simplicity)
+        players = players.sort((a,b) => b.mmr - a.mmr).slice(0,10);
+      }
+
+      if (players.length < 10) {
+        alert(currentLanguage === 'en' ? "Need 10 players to balance teams 5v5" : "Нужно 10 игроков для балансировки команд 5 на 5");
+        return;
+      }
+
+      // Special red-color players matching - separate them
+      const redPlayers = players.filter(p => getColor(p.bhv) === 'red');
+      const otherPlayers = players.filter(p => getColor(p.bhv) !== 'red');
+
+      // Sort red players by trophyLevel descending then by BHV and MMR for pairing
+      redPlayers.sort((a,b) => b.trophyLevel - a.trophyLevel || a.bhv - b.bhv || b.mmr - a.mmr);
+      // We will try to match red players 1v1 or 2v1, 2v2 per your description by efficient pairing
+
+      // Then sort other players by trophyLevel range (spread preference), then order (by trophyLevel), then MMR descending
+      // For range proceed as assigning players closer in trophyLevel to same team
+      otherPlayers.sort((a,b) => {
+        // No direct "range" param here; so use difference heuristic - for sorting just trophyLevel descending then mmr desc
+        return b.trophyLevel - a.trophyLevel || b.mmr - a.mmr;
+      });
+
+      // Create teams arrays
+      const team1 = [];
+      const team2 = [];
+
+      // Assign red players strategically - try pairs or singles against each other
+      // We will try to balance red players count evenly if possible, preferring a 1v1 or 2v2 formation
+      for (let i=0; i<redPlayers.length; i++) {
+        if (i % 2 === 0) {
+          team1.push(redPlayers[i]);
+        } else {
+          team2.push(redPlayers[i]);
+        }
+      }
+
+      // Fill remaining spots with other players trying to balance trophyLevel ranges
+      // Sort team by trophyLevel sum so far:
+      let sumTrophy1 = team1.reduce((sum,p) => sum + (p.trophyLevel || 0), 0);
+      let sumTrophy2 = team2.reduce((sum,p) => sum + (p.trophyLevel || 0), 0);
+
+      for (const player of otherPlayers) {
+        // Always assign player to the team with currently lower trophyLevel sum
+        if (team1.length < 5 && team2.length < 5) {
+          if ((sumTrophy1 + player.trophyLevel) <= (sumTrophy2 + player.trophyLevel)) {
+            team1.push(player);
+            sumTrophy1 += player.trophyLevel;
+          } else {
+            team2.push(player);
+            sumTrophy2 += player.trophyLevel;
+          }
+        } else if (team1.length < 5) {
+          team1.push(player);
+          sumTrophy1 += player.trophyLevel;
+        } else if (team2.length < 5) {
+          team2.push(player);
+          sumTrophy2 += player.trophyLevel;
+        }
+      }
+
+      // If teams are not exactly 5 players each, balance by adding/removing from queue
+      // If still missing players, add from queue
+      while (team1.length < 5 && globalQueue.length > 0) {
+        team1.push(globalQueue.shift());
+      }
+      while (team2.length < 5 && globalQueue.length > 0) {
+        team2.push(globalQueue.shift());
+      }
+
+      // Remove balanced players from queue if they were there mistakenly
+      globalQueue = globalQueue.filter(p => !team1.includes(p) && !team2.includes(p));
+
+      // Put balanced teams back to lobby
+      lobby.team1 = team1;
+      lobby.team2 = team2;
+
+      drawBalanceChart();
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function balanceTeamsKolton() {
+      try {
+        const lobby = lobbies[currentLobby];
+        
+        // Collect only unbanned players from both teams
+        let players = [...lobby.team1, ...lobby.team2].filter(p => !p.banned);
+
+        // Fill from queue if needed
+        if (players.length < 10) {
+          const needed = 10 - players.length;
+          const fromQueue = globalQueue.filter(p => !p.banned).slice(0, needed);
+          players = players.concat(fromQueue);
+          globalQueue = globalQueue.filter(p => !fromQueue.includes(p));
+        } else if (players.length > 10) {
+          players = players.sort((a,b) => (-b.bhv + b.mmr) - (-a.bhv + a.mmr)).slice(0,10);
+        }
+
+        if (players.length < 10) {
+          alert(currentLanguage === 'en' ? "Need 10 players to balance teams 5v5" : "Нужно 10 игроков для балансировки команд 5 на 5");
+          return;
+        }
+
+        // Kolton's algorithm: Sort by BHV (порядочность) descending, then by MMR descending
+        const sortedPlayers = players.sort((a, b) => b.bhv - a.bhv || b.mmr - a.mmr);
+        
+        const team1 = [];
+        const team2 = [];
+        
+        // Distribute players alternately, starting with highest BHV
+        sortedPlayers.forEach((player, index) => {
+          if (index % 2 === 0) {
+            team1.push(player);
+          } else {
+            team2.push(player);
+          }
+        });
+
+        // Put balanced teams back to lobby
+        lobby.team1 = team1;
+        lobby.team2 = team2;
+
+        // Only draw chart if canvas exists
+        const canvas = document.getElementById('balanceChart');
+        if (canvas) {
+          drawBalanceChart();
+        }
+        
+        renderLobby();
+        saveToLocalStorage();
+      } catch (error) {
+        console.error('Error in balanceTeamsKolton:', error);
+        alert(currentLanguage === 'en' ? 'Error balancing teams. Please check console for details.' : 'Ошибка при балансировке команд. Проверьте консоль для деталей.');
+      }
+    }
+
+    // The rest of the code remains unchanged except adding trophyLevel load/save in relevant places
+
+    function createBestLobby() {
+      if (globalQueue.length < 10) {
+        alert(currentLanguage === 'en' ? "Need at least 10 players in queue to create a 5v5 lobby" : "Нужно минимум 10 игроков в очереди для создания лобби 5х5");
+        return;
+      }
+
+      // Get top 10 players by MMR
+      const candidates = [...globalQueue]
+        .filter(p => !p.banned)
+        .sort((a, b) => b.mmr - a.mmr)
+        .slice(0, Math.min(20, globalQueue.length)); // Take top 20 MMR players
+
+      if (candidates.length < 10) {
+        alert(currentLanguage === 'en' ? "Not enough unbanned players in queue to create a 5v5 lobby" : "Недостаточно незабаненных игроков для создания лобби 5х5");
+        return;
+      }
+
+      // Find the most balanced 10 players group
+      let bestGroup = [];
+      let bestDiff = Infinity;
+
+      // Try multiple random combinations to find the most balanced
+      for (let i = 0; i < 100; i++) {
+        const shuffled = shuffleArray([...candidates]);
+        const group = shuffled.slice(0, 10);
+        
+        // Calculate MMR and BHV variance
+        const mmrs = group.map(p => p.mmr);
+        const bhvs = group.map(p => p.bhv);
+        
+        const mmrDiff = Math.max(...mmrs) - Math.min(...mmrs);
+        const bhvDiff = Math.max(...bhvs) - Math.min(...bhvs);
+        const trophyLevels = group.map(p => p.trophyLevel || 0);
+        const trophyDiff = Math.max(...trophyLevels) - Math.min(...trophyLevels);
+
+        const totalDiff = mmrDiff * 0.5 + bhvDiff + trophyDiff * 2; // More weight to BHV and trophy spread
+        
+        if (totalDiff < bestDiff) {
+          bestDiff = totalDiff;
+          bestGroup = group;
+        }
+      }
+
+      // Remove selected players from queue
+      globalQueue = globalQueue.filter(p => !bestGroup.some(g => g.name === p.name));
+
+      // Add to current lobby
+      const lobby = lobbies[currentLobby];
+      lobby.team1 = [];
+      lobby.team2 = [];
+
+      // Distribute players to teams
+      bestGroup.sort((a, b) => b.mmr - a.mmr); // Sort by MMR descending
+      bestGroup.forEach((p, i) => {
+        if (i % 2 === 0) {
+          lobby.team1.push(p);
+        } else {
+          lobby.team2.push(p);
+        }
+      });
+
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
+    function kickPlayer(source, index, isQueue = false) {
+      if (isQueue) {
+        globalQueue.splice(index, 1);
+      } else {
+        lobbies[currentLobby][source].splice(index, 1);
+      }
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function moveToQueue(source, index) {
+      const player = lobbies[currentLobby][source].splice(index, 1)[0];
+      if (!player.banned) {
+        globalQueue.push(player);
+      }
+      renderLobby();
+      saveToLocalStorage();
+    }
+
+    function clearQueue() {
+      if (confirm(currentLanguage === 'en' ? "Clear the queue? All players will be removed." : "Очистить очередь? Все игроки будут удалены.")) {
+        globalQueue = [];
+        renderLobby();
+        saveToLocalStorage();
+      }
+    }
+
+    function searchPlayer() {
+      updatePlayersList(document.getElementById("playerSearch").value.toLowerCase());
+    }
+
+    function sortPlayers(field, direction) {
+      currentSort = { field, direction };
+      updatePlayersList();
+      
+      // Update active sort button
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.classList.remove('active');
+        const btnText = btn.textContent.toLowerCase();
+        const fieldMap = {
+          'name': 'name',
+          'mmr': 'mmr',
+          'bhv': 'bhv'
+        };
+        const dirMap = {
+          'asc': ['a-z', 'low-high'],
+          'desc': ['z-a', 'high-low']
+        };
+
+        if (btnText.includes(fieldMap[field])) {
+          if (dirMap[direction].some(d => btnText.includes(d))) {
+            btn.classList.add('active');
+          }
+        }
+      });
+    }
+
+    function updatePlayersList(filter = "") {
+      const listElement = document.getElementById("playersListContent");
+      listElement.innerHTML = "";
+
+      const hideInLobby = document.getElementById("hideInLobby").checked;
+      const hideInQueue = document.getElementById("hideInQueue").checked;
+      const hideOffline = document.getElementById("hideOffline").checked;
+      const showBannedOnly = document.getElementById("showBannedOnly").checked;
+      const bhvFilter1 = document.getElementById("bhvFilter1").checked;
+      const bhvFilter2 = document.getElementById("bhvFilter2").checked;
+      const bhvFilter3 = document.getElementById("bhvFilter3").checked;
+      
+      let filteredPlayers = allPlayers.filter(player => {
+        const inLobby = lobbies.some(l => l.team1.concat(l.team2).some(p => p.name === player.name));
+        const inQueue = globalQueue.some(p => p.name === player.name);
+        const isOnline = inLobby || inQueue;
+        
+        if (bhvFilter1 || bhvFilter2 || bhvFilter3) {
+          const bhv = player.bhv;
+          const matchesFilter = 
+            (bhvFilter1 && bhv >= 0 && bhv < 5000) ||
+            (bhvFilter2 && bhv >= 5000 && bhv < 7500) ||
+            (bhvFilter3 && bhv >= 7500);
+          
+          if (!matchesFilter) return false;
+        }
+        
+        if (showBannedOnly) return player.banned;
+        if (hideInLobby && inLobby) return false;
+        if (hideInQueue && inQueue) return false;
+        if (hideOffline && !isOnline) return false;
+        if (
+          filter &&
+          !player.name.toLowerCase().includes(filter) &&
+          !(player.friendId && player.friendId.toLowerCase().includes(filter))
+        ) return false;
+        return true;
+      });
+
+      filteredPlayers.sort((a, b) => {
+        let valA, valB;
+        
+        if (currentSort.field === 'lastSeen') {
+          valA = new Date(a.lastSeen || 0);
+          valB = new Date(b.lastSeen || 0);
+        } else {
+          valA = a[currentSort.field];
+          valB = b[currentSort.field];
+        }
+        
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
+        if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      filteredPlayers.forEach((player) => {
+        const status = getPlayerStatus(player);
+        const statusClass = getStatusClass(status);
+        
+        const playerElement = document.createElement("div");
+        playerElement.className = `player-list-item ${player.banned ? 'banned' : getColor(player.bhv)}`;
+        playerElement.innerHTML = `
+          <div>
+            <strong>${player.name}</strong> 
+            <span class="player-status ${statusClass}">${status}</span>
+          </div>
+          <div>MMR: ${player.mmr} | BHV: ${player.bhv} | Trophy: ${player.trophyLevel || 0}</div>
+          <div class="player-actions">
+            <button onclick="addPlayerToQueueFromList('${player.name}')" ${player.banned ? 'disabled' : ''}>${translations[currentLanguage].addToQueue}</button>
+            <button onclick="openEditModal(${JSON.stringify(player)}, findPlayerLocation(${JSON.stringify(player)}))">${translations[currentLanguage].editPlayer.substring(0, 4)}.</button>
+          </div>
+        `;
+        playerElement.ondblclick = () => {
+          for (let i = 0; i < lobbies.length; i++) {
+            if (lobbies[i].team1.some(p => p.name === player.name) || lobbies[i].team2.some(p => p.name === player.name)) {
+              if (i !== currentLobby) {
+                switchLobby(i);
+                showMainPage();
+              }
+              break;
+            }
+          }
+          openEditModal(player, findPlayerLocation(player));
+        };
+        listElement.appendChild(playerElement);
+      });
+    }
+
+    function addPlayerToQueueFromList(playerName) {
+      const player = allPlayers.find(p => p.name === playerName);
+      if (!player) return;
+
+      if (player.banned) {
+        alert(currentLanguage === 'en' ? "Banned players cannot be added to queue" : "Забаненные игроки не могут быть добавлены в очередь");
+        return;
+      }
+
+      const alreadyInGame = lobbies.some(lobby =>
+        lobby.team1.concat(lobby.team2).some(p => p.name === player.name)
+      );
+      if (alreadyInGame) {
+        alert(currentLanguage === 'en' ? "Player is already in one of the lobbies" : "Игрок уже в одном из лобби");
+        return;
+      }
+
+      const alreadyInQueue = globalQueue.some(p => p.name === player.name);
+      if (alreadyInQueue) {
+        alert(currentLanguage === 'en' ? "Player is already in queue" : "Игрок уже в очереди");
+        return;
+      }
+
+      globalQueue.unshift({...player});
+      renderLobby();
+      updatePlayersList();
+      saveToLocalStorage();
+    }
+
+    function findPlayerLocation(player) {
+      const queueIndex = globalQueue.findIndex(p => p.name === player.name);
+      if (queueIndex !== -1) {
+        return { source: 'queue', index: queueIndex, isQueue: true };
+      }
+      
+      for (let i = 0; i < lobbies.length; i++) {
+        const lobby = lobbies[i];
+        for (const [source, players] of Object.entries(lobby)) {
+          const index = players.findIndex(p => p.name === player.name);
+          if (index !== -1) return { source, index, lobbyIndex: i };
+        }
+      }
+      return null;
+    }
+
+    function openEditModal(player, location) {
+      currentlyEditedPlayer = { player, location };
+      document.getElementById("editName").value = player.name;
+      document.getElementById("editMMR").value = player.mmr;
+      document.getElementById("editBHV").value = player.bhv;
+      document.getElementById("editTrophyLevel").value = player.trophyLevel || '';
+      document.getElementById("editFriendId").value = player.friendId || '';
+      document.getElementById("editNote").value = player.note || "";
+      
+      const banButton = document.getElementById("banButton");
+      if (player.banned) {
+        banButton.textContent = translations[currentLanguage].unban;
+        banButton.className = "success";
+      } else {
+        banButton.textContent = translations[currentLanguage].ban;
+        banButton.className = "danger";
+      }
+      
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    function toggleBanPlayer() {
+      const { player } = currentlyEditedPlayer;
+      player.banned = !player.banned;
+      player.lastSeen = new Date().toLocaleDateString();
+      
+      const allPlayerIndex = allPlayers.findIndex(p => 
+        p.name === player.name || (player.friendId && p.friendId === player.friendId)
+      );
+      if (allPlayerIndex !== -1) {
+        allPlayers[allPlayerIndex].banned = player.banned;
+        allPlayers[allPlayerIndex].lastSeen = player.lastSeen;
+      }
+      
+      if (player.banned) {
+        globalQueue = globalQueue.filter(p => p.name !== player.name);
+        
+        lobbies.forEach(lobby => {
+          lobby.team1 = lobby.team1.filter(p => p.name !== player.name);
+          lobby.team2 = lobby.team2.filter(p => p.name !== player.name);
+        });
+      }
+      
+      saveToLocalStorage();
+      renderLobby();
+      updatePlayersList();
+      closeModal();
+    }
+
+    function closeModal() {
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    function savePlayerChanges() {
+      const name = document.getElementById("editName").value;
+      const mmr = parseInt(document.getElementById("editMMR").value);
+      const bhv = parseInt(document.getElementById("editBHV").value);
+      const trophyLevel = parseInt(document.getElementById("editTrophyLevel").value) || 0;
+      const friendId = document.getElementById("editFriendId").value;
+      const note = document.getElementById("editNote").value;
+
+      if (!name || isNaN(mmr) || isNaN(bhv)) {
+        alert(currentLanguage === 'en' ? "Please fill all fields correctly!" : "Пожалуйста, заполните все поля правильно!");
+        return;
+      }
+
+      const { player, location } = currentlyEditedPlayer;
+      if (!location) return;
+
+      if (friendId && friendId !== player.friendId) {
+        const existingPlayer = allPlayers.find(p => p.friendId === friendId && p.name !== player.name);
+        if (existingPlayer) {
+          alert(currentLanguage === 'en' ? "This Friend ID is already used by another player" : "Этот Friend ID уже используется другим игроком");
+          return;
+        }
+      }
+
+      player.name = name;
+      player.mmr = mmr;
+      player.bhv = bhv;
+      player.trophyLevel = trophyLevel;
+      player.friendId = friendId;
+      player.note = note;
+      player.lastSeen = new Date().toLocaleDateString();
+
+      const allPlayerIndex = allPlayers.findIndex(p => 
+        p.name === player.name || (player.friendId && p.friendId === player.friendId)
+      );
+      if (allPlayerIndex !== -1) {
+        allPlayers[allPlayerIndex] = {...player};
+      } else {
+        allPlayers.push({...player});
+      }
+
+      closeModal();
+      renderLobby();
+      updatePlayersList();
+      saveToLocalStorage();
+    }
+
+    function clearCurrentLobby() {
+      if (confirm(currentLanguage === 'en' ? "Clear the current lobby? All players will be moved to queue." : "Очистить текущее лобби? Все игроки будут перемещены в очередь.")) {
+        const lobby = lobbies[currentLobby];
+        globalQueue.push(...lobby.team1.filter(p => !p.banned), ...lobby.team2.filter(p => !p.banned));
+        lobby.team1 = [];
+        lobby.team2 = [];
+        renderLobby();
+        saveToLocalStorage();
+      }
+    }
+
+    function openSettingsModal() {
+      document.getElementById("settingsModal").style.display = "flex";
+      document.getElementById("languageSelect").value = currentLanguage;
+      document.getElementById("balancerSelect").value = currentBalancer;
+    }
+
+    function closeSettingsModal() {
+      document.getElementById("settingsModal").style.display = "none";
+    }
+
+    function changeBalancer() {
+      const selectedBalancer = document.getElementById("balancerSelect").value;
+      
+      if (selectedBalancer === 'kolton') {
+        // Показываем модальное окно подтверждения
+        document.getElementById("balancerConfirmModal").style.display = "flex";
+      } else {
+        currentBalancer = selectedBalancer;
+        saveToLocalStorage();
+      }
+    }
+
+    function confirmBalancerChange() {
+      currentBalancer = 'kolton';
+      document.getElementById("balancerConfirmModal").style.display = "none";
+      saveToLocalStorage();
+      closeSettingsModal();
+    }
+
+    function cancelBalancerChange() {
+      // Возвращаем селектор к разработчику
+      document.getElementById("balancerSelect").value = 'developer';
+      document.getElementById("balancerConfirmModal").style.display = "none";
+    }
+
+    function changeLanguage() {
+      currentLanguage = document.getElementById("languageSelect").value;
+      applyLanguage();
+      saveToLocalStorage();
+      closeSettingsModal();
+    }
+
+    function applyLanguage() {
+      const lang = translations[currentLanguage];
+
+      // Main page
+      document.getElementById("mainTitle").textContent = lang.title;
+      document.getElementById("name").placeholder = lang.nickname;
+      document.getElementById("mmr").placeholder = lang.rating;
+      document.getElementById("bhv").placeholder = lang.bhv;
+      document.getElementById("trophyLevel").placeholder = lang.trophyLevel;
+      document.getElementById("friendId").placeholder = lang.friendId;
+      document.getElementById("addToQueueBtn").textContent = lang.addToQueue;
+      document.getElementById("moveAllBtn").textContent = lang.moveAllToLobby;
+      document.getElementById("clearLobbyBtn").textContent = lang.clearLobby;
+      document.getElementById("team1Title").innerHTML = `${lang.team1} <span class="team-count">(<span id="team1Count">0</span>/5)</span>`;
+      document.getElementById("team2Title").innerHTML = `${lang.team2} <span class="team-count">(<span id="team2Count">0</span>/5)</span>`;
+      document.getElementById("balanceBtn").textContent = lang.balanceTeams;
+      document.getElementById("queueTitle").innerHTML = `${lang.globalQueue} <span class="team-count">(<span id="queueCount">0</span>)</span>`;
+      document.getElementById("createLobbyBtn").textContent = lang.createLobby;
+      document.getElementById("clearQueueBtn").textContent = lang.clearQueue;
+      document.querySelector('#mainPage .form-group button[onclick="suggestBetterSwap()"]').textContent = lang.suggestSwap;
+
+
+      // All players page
+      document.getElementById("allPlayersTitle").textContent = lang.allPlayers;
+      document.getElementById("playerSearch").placeholder = `${lang.nickname}...`;
+      document.getElementById("hideInLobbyLabel").textContent = lang.hideInLobby;
+      document.getElementById("hideInQueueLabel").textContent = lang.hideInQueue;
+      document.getElementById("hideOfflineLabel").textContent = lang.hideOffline;
+      document.getElementById("showBannedLabel").textContent = lang.showBanned;
+      document.getElementById("bhvFilter1Label").textContent = lang.bhvFilter1;
+      document.getElementById("bhvFilter2Label").textContent = lang.bhvFilter2;
+      document.getElementById("bhvFilter3Label").textContent = lang.bhvFilter3;
+      document.getElementById("sortNameAsc").textContent = lang.sortNameAsc;
+      document.getElementById("sortNameDesc").textContent = lang.sortNameDesc;
+      document.getElementById("sortMmrAsc").textContent = lang.sortMmrAsc;
+      document.getElementById("sortMmrDesc").textContent = lang.sortMmrDesc;
+      document.getElementById("sortBhvAsc").textContent = lang.sortBhvAsc;
+      document.getElementById("sortBhvDesc").textContent = lang.sortBhvDesc;
+      document.getElementById("backToLobbyBtn").textContent = lang.backToLobby;
+
+      // Edit modal
+      document.getElementById("editPlayerTitle").textContent = lang.editPlayer;
+      document.getElementById("editName").placeholder = lang.nickname;
+      document.getElementById("editMMR").placeholder = lang.rating;
+      document.getElementById("editBHV").placeholder = lang.bhv;
+      document.getElementById("editTrophyLevel").placeholder = lang.trophyLevel;
+      document.getElementById("savePlayerBtn").textContent = lang.save;
+      document.getElementById("cancelEditBtn").textContent = lang.cancel;
+      
+      // Settings modal
+      document.getElementById("settingsTitle").textContent = lang.settings;
+      document.getElementById("languageLabel").textContent = lang.language;
+      document.getElementById("backgroundLabel").textContent = lang.background;
+      document.getElementById("balancerLabel").textContent = lang.balancer;
+      
+      // Update balancer select options
+      const balancerSelect = document.getElementById("balancerSelect");
+      balancerSelect.options[0].textContent = lang.developerBalancer;
+      balancerSelect.options[1].textContent = lang.koltonBalancer;
+      
+      document.getElementById("dataLabel").textContent = lang.dataManagement;
+      document.getElementById("downloadBtn").textContent = lang.downloadPlayers;
+      document.getElementById("loadBtn").textContent = lang.loadPlayers;
+      document.getElementById("stayDeveloperBtn").textContent = currentLanguage === 'en' ? 
+        "Stay on Developer Version" : "Остаться на версии Разработчика";
+      document.getElementById("closeSettingsBtn").textContent = lang.close;
+
+      if (document.getElementById("editModal").style.display === "flex" && currentlyEditedPlayer) {
+        const banButton = document.getElementById("banButton");
+        if (currentlyEditedPlayer.player.banned) {
+          banButton.textContent = lang.unban;
+          banButton.className = "success";
+        } else {
+          banButton.textContent = lang.ban;
+          banButton.className = "danger";
+        }
+      }
+
+      renderLobby();
+      if (document.getElementById("allPlayersPage").style.display !== "none") {
+        updatePlayersList();
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('dotaBalancerData', JSON.stringify({
+        lobbies,
+        globalQueue,
+        allPlayers,
+        currentLanguage,
+        currentBalancer
+      }));
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const savedData = localStorage.getItem('dotaBalancerData');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          
+          // Initialize lobbies
+          if (parsedData.lobbies) {
+            parsedData.lobbies.forEach((lobby, index) => {
+              lobbies[index] = lobby || { team1: [], team2: [] };
+            });
+          }
+          
+          // Initialize global queue
+          if (parsedData.globalQueue) {
+            globalQueue = parsedData.globalQueue || [];
+          }
+          
+          // Initialize all players
+          if (parsedData.allPlayers) {
+            allPlayers = parsedData.allPlayers || [];
+          } else {
+            // Build allPlayers from current data
+            allPlayers = [];
+            globalQueue.forEach(p => allPlayers.push({...p}));
+            lobbies.forEach(lobby => {
+              lobby.team1.forEach(p => allPlayers.push({...p}));
+              lobby.team2.forEach(p => allPlayers.push({...p}));
+            });
+            allPlayers = allPlayers.filter((player, index, self) =>
+              index === self.findIndex(p => p.name === player.name)
+            );
+          }
+          
+          if (parsedData.currentLanguage) {
+            currentLanguage = parsedData.currentLanguage;
+          }
+          if (parsedData.currentBalancer) {
+            currentBalancer = parsedData.currentBalancer;
+          }
+          
+          applyLanguage();
+          renderLobby();
+        } else {
+          // Initialize empty state if no saved data
+          renderLobby();
+        }
+      } catch (error) {
+        console.error('Error loading from localStorage:', error);
+        renderLobby(); // Render empty state on error
+      }
+    }
+
+    // Promo modal functions
+    function showPromoModal() {
+      try {
+        document.getElementById('promoModal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error showing promo modal:', error);
+      }
+    }
+
+    function closePromoModal() {
+      try {
+        document.getElementById('promoModal').style.display = 'none';
+      } catch (error) {
+        console.error('Error closing promo modal:', error);
+      }
+    }
+
+    function declineOffer() {
+      try {
+        closePromoModal();
+        const rejectionMsg = document.getElementById('rejectionMessage');
+        if (rejectionMsg) {
+          rejectionMsg.style.display = 'block';
+          setTimeout(() => {
+            rejectionMsg.style.display = 'none';
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error in declineOffer:', error);
+      }
+    }
+
+    window.onload = () => {
+      loadFromLocalStorage();
+      renderLobby();
+      
+      // Force render lobby to ensure players are visible
+      setTimeout(() => {
+        renderLobby();
+        updatePlayersList();
+      }, 100);
+      
+      // Show promo modal every time with retry
+      setTimeout(() => {
+        try {
+          showPromoModal();
+        } catch (error) {
+          console.error('Failed to show promo modal:', error);
+        }
+      }, 1000);
+    };
+
+    function downloadPlayers() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allPlayers));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "players.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      document.body.removeChild(downloadAnchorNode);
+    }
+
+    function loadPlayers(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            // Clear existing players to avoid duplicates when loading
+            allPlayers = []; 
+            players = data; // 'players' is a temporary variable used in renderPlayerList
+            renderPlayerList();
+          } else {
+            alert(currentLanguage === 'en' ? "File does not contain a list of players." : "Файл не содержит список игроков.");
+          }
+        } catch (err) {
+          alert((currentLanguage === 'en' ? "Error loading file: " : "Ошибка загрузки файла: ") + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function renderPlayerList() {
+      const list = document.getElementById('playerList'); // This element is not used for displaying the loaded list, but for a temporary message
+      list.innerHTML = ''; // Clear previous message
+      let added = 0, skipped = 0;
+
+      players.forEach(player => {
+        // Ensure player data is valid before adding
+        if (player.name && typeof player.mmr === 'number' && typeof player.bhv === 'number') {
+          const exists = allPlayers.find(p => p.name === player.name || (p.friendId && p.friendId === player.friendId));
+          if (!exists) {
+            allPlayers.push({...player});
+            added++;
+          } else {
+            // Optionally update existing player data if loaded data is newer/more complete
+            exists.mmr = player.mmr;
+            exists.bhv = player.bhv;
+            exists.trophyLevel = player.trophyLevel || 0;
+            exists.friendId = player.friendId || '';
+            exists.note = player.note || '';
+            exists.banned = player.banned || false;
+            exists.lastSeen = player.lastSeen || new Date().toLocaleDateString();
+            added++; // Count as added/updated
+          }
+        } else {
+          skipped++;
+        }
+      });
+
+      saveToLocalStorage();
+      updatePlayersList(); // Refresh the 'All Players' page
+      renderLobby(); // Refresh the current lobby
+
+      alert(`${currentLanguage === 'en' ? '✅ Players added/updated: ' : '✅ Добавлено/обновлено игроков: '}${added}\n${currentLanguage === 'en' ? '❌ Skipped (invalid data): ' : '❌ Пропущено (неверные данные): '}${skipped}`);
+    }
+
+    function suggestBetterSwap() {
+      const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
+      const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+
+      let bestSwap = null;
+      let bestDiff = Infinity;
+
+      const calcTeamStats = (t1, t2) => {
+        const sum = arr => arr.reduce((s, x) => s + x, 0);
+        const t1MMR = sum(t1.map(p => p.mmr));
+        const t2MMR = sum(t2.map(p => p.mmr));
+        const t1BHV = sum(t1.map(p => p.bhv));
+        const t2BHV = sum(t2.map(p => p.bhv));
+        return Math.abs(t1MMR - t2MMR) + Math.abs(t1BHV - t2BHV);
+      };
+
+      for (let i = 0; i < team1.length; i++) {
+        for (let j = 0; j < team2.length; j++) {
+          const newTeam1 = [...team1];
+          const newTeam2 = [...team2];
+          [newTeam1[i], newTeam2[j]] = [newTeam2[j], newTeam1[i]];
+
+          const diff = calcTeamStats(newTeam1, newTeam2);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestSwap = [team1[i], team2[j]];
+          }
+        }
+      }
+
+      if (bestSwap) {
+        alert(
+          `${currentLanguage === 'en' ? '🔁 Suggested Swap:\n\n' : '🔁 Предлагается обмен:\n\n'}` +
+          `➡️ ${bestSwap[0].name} (Team 1) ⇄ ${bestSwap[1].name} (Team 2)\n\n` +
+          `${currentLanguage === 'en' ? '⚖️ This will improve MMR + BHV balance.' : '⚖️ Это улучшит баланс MMR + BHV.'}`
+        );
+      } else {
+        alert(currentLanguage === 'en' ? "Could not find a suitable swap." : "Не удалось найти подходящую замену.");
+      }
+    }
+
+    function changeBackground() {
+      const value = document.getElementById('backgroundPicker').value;
+      const bgDiv = document.getElementById('dynamicBackground');
+
+      // Reset filter for custom backgrounds
+      bgDiv.style.filter = 'blur(5px) brightness(0.5)';
+
+      if (value === 'red-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(255,0,0,0.6), rgba(0,0,0,0.8))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'black-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(0,0,0,0.6), rgba(30,30,30,0.9))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'white-blur') {
+        bgDiv.style.background = 'radial-gradient(circle, rgba(255,255,255,0.6), rgba(200,200,200,0.9))';
+        bgDiv.style.backgroundSize = 'cover';
+      } else if (value === 'gradient') {
+        bgDiv.style.background = 'linear-gradient(135deg, #1f4037, #99f2c8)';
+        bgDiv.style.backgroundSize = 'cover';
+        bgDiv.style.filter = 'blur(8px) brightness(0.6)'; /* More blur for gradient */
+      } else {
+        bgDiv.style.background = `url('${value}') center/cover no-repeat`;
+      }
+    }
+
+    function drawBalanceChart() {
+      const canvas = document.getElementById('balanceChart');
+      const ctx = canvas.getContext('2d');
+      const btn = document.getElementById('hideChartBtn');
+      canvas.style.display = 'block';
+      btn.style.display = 'inline-block';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const team1 = lobbies[currentLobby].team1.filter(p => !p.banned);
+      const team2 = lobbies[currentLobby].team2.filter(p => !p.banned);
+      const all = [...team1, ...team2];
+      if (all.length === 0) return;
+
+      const mmrs = all.map(p => p.mmr);
+      const bhvs = all.map(p => p.bhv);
+
+      const minMMR = Math.min(...mmrs), maxMMR = Math.max(...mmrs);
+      const minBHV = Math.min(...bhvs), maxBHV = Math.max(...bhvs);
+
+      const padX = 50;
+      const padY = 40;
+
+      // Add some padding to min/max for better visualization
+      const rangeMMR = (maxMMR - minMMR) || 1;
+      const rangeBHV = (maxBHV - minBHV) || 1;
+      const scaledMinMMR = minMMR - rangeMMR * 0.1;
+      const scaledMaxMMR = maxMMR + rangeMMR * 0.1;
+      const scaledMinBHV = minBHV - rangeBHV * 0.1;
+      const scaledMaxBHV = maxBHV + rangeBHV * 0.1;
+
+      const scaleX = mmr => padX + ((mmr - scaledMinMMR) / (scaledMaxMMR - scaledMinMMR)) * (canvas.width - padX * 1.5);
+      const scaleY = bhv => canvas.height - padY - ((bhv - scaledMinBHV) / (scaledMaxBHV - scaledMinBHV)) * (canvas.height - padY * 1.5);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)'; /* Lighter grid lines */
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 5; i++) {
+        const x = padX + i * (canvas.width - padX * 1.5) / 5;
+        ctx.moveTo(x, padY);
+        ctx.lineTo(x, canvas.height - padY);
+      }
+      for (let i = 0; i <= 5; i++) {
+        const y = padY + i * (canvas.height - padY * 1.5) / 5;
+        ctx.moveTo(padX, y);
+        ctx.lineTo(canvas.width - padX / 2, y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = 'var(--text-dark)'; /* Axis labels color */
+      ctx.font = '12px Inter';
+      ctx.fillText("MMR →", canvas.width - padX, canvas.height - 10);
+      ctx.fillText("↑ BHV", 10, padY - 10);
+
+      function drawPlayer(p, color) {
+        const x = scaleX(p.mmr);
+        const y = scaleY(p.bhv);
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(x, y, 7, 0, 2 * Math.PI); /* Slightly larger dots */
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = 'white';
+        ctx.font = '11px Inter';
+        ctx.fillText(`${p.mmr}/${p.bhv}`, x + 10, y - 4); /* Offset text */
+      }
+
+      team1.forEach(p => drawPlayer(p, 'var(--accent-red)')); /* Use CSS variable for color */
+      team2.forEach(p => drawPlayer(p, 'var(--accent-green)')); /* Use CSS variable for color */
+    }
+
+    function hideBalanceChart() {
+      document.getElementById('balanceChart').style.display = 'none';
+      document.getElementById('hideChartBtn').style.display = 'none';
+    }
+
+    // BHV Calculator functions
+    function openBhvCalculator() {
+      document.getElementById('bhvCalculatorModal').style.display = 'flex';
+    }
+
+    function closeBhvCalculator() {
+      document.getElementById('bhvCalculatorModal').style.display = 'none';
+      document.getElementById('bhvResult').style.display = 'none';
+    }
+
+    function calculateBhv() {
+      const start = parseInt(document.getElementById('bhvStart').value);
+      const end = parseInt(document.getElementById('bhvEnd').value);
+      
+      if (isNaN(start) || isNaN(end)) {
+        alert('Пожалуйста, введите корректные числа');
+        return;
+      }
+      
+      if (start >= end) {
+        alert('Значение "Было" должно быть меньше значения "Стало"');
+        return;
+      }
+
+      // Updated calculator logic with new values
+      const needed = end - start;
+      let totalGames = 0;
+
+      // Updated zones: (from, to, reward per game)
+      const zones = [
+        [0, 3000, 750 / 15],
+        [3000, 5000, 500 / 15],
+        [5000, 7500, 375 / 15],
+        [7500, 12000, 225 / 15]
+      ];
+
+      let current = start;
+
+      for (const [zoneStart, zoneEnd, gainPerGame] of zones) {
+        if (current >= zoneEnd) continue;
+        
+        const zoneFrom = Math.max(current, zoneStart);
+        const zoneTo = Math.min(end, zoneEnd);
+        
+        if (zoneTo > zoneFrom) {
+          const diff = zoneTo - zoneFrom;
+          const games = Math.ceil(diff / gainPerGame);
+          totalGames += games;
+          current = zoneTo;
+        }
+      }
+
+      totalGames = Math.max(totalGames, 0);
+      const tables = Math.ceil(totalGames / 15);
+
+      const resultDiv = document.getElementById('bhvResult');
+      const resultContent = document.getElementById('bhvResultContent');
+      
+      resultContent.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 1.2em; margin-bottom: 10px;">📈 Надо апнуть: <strong>${needed}</strong> порядочности</div>
+          <div style="font-size: 1.1em; margin-bottom: 10px;">🎮 Примерно игр нужно: <strong>${totalGames}</strong></div>
+          <div style="font-size: 1.1em;">📋 Табличек нужно: <strong>${tables}</strong></div>
+        </div>
+      `;
+      
+      resultDiv.style.display = 'block';
+    }
+
+    // Donate functions
+    function openDonateModal() {
+      document.getElementById('donateModal').style.display = 'flex';
+    }
+
+    function closeDonateModal() {
+      document.getElementById('donateModal').style.display = 'none';
+    }
+
+    function openDonateLink() {
+      window.open('https://funpay.com/lots/offer?id=41171783', '_blank');
+      closeDonateModal();
+    }
+
+    // Audio Player functionality
+    let audioPlayer = null;
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let tracks = [];
+
+    function toggleAudioPlayer() {
+      const modal = document.getElementById('audioPlayerModal');
+      if (modal.style.display === 'flex') {
+        closeAudioPlayer();
+      } else {
+        openAudioPlayer();
+      }
+    }
+
+    function openAudioPlayer() {
+      document.getElementById('audioPlayerModal').style.display = 'flex';
+      initializeAudioPlayer();
+    }
+
+    function closeAudioPlayer() {
+      document.getElementById('audioPlayerModal').style.display = 'none';
+    }
+
+    function initializeAudioPlayer() {
+      if (!audioPlayer) {
+        audioPlayer = new Audio();
+        audioPlayer.addEventListener('loadedmetadata', updateDuration);
+        audioPlayer.addEventListener('timeupdate', updateProgress);
+        audioPlayer.addEventListener('ended', nextTrack);
+        
+        // Volume control
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        
+        volumeSlider.addEventListener('input', function() {
+          const volume = this.value / 100;
+          audioPlayer.volume = volume;
+          volumeValue.textContent = this.value + '%';
+        });
+        
+        // Progress bar
+        const progressBar = document.getElementById('progressBar');
+        progressBar.addEventListener('input', function() {
+          const seekTime = (this.value / 100) * audioPlayer.duration;
+          audioPlayer.currentTime = seekTime;
+        });
+        
+        // Set initial volume
+        audioPlayer.volume = 0.7;
+      }
+      
+      // Scan sounds folder for music files
+      scanSoundsFolder();
+      
+      // Load first track if tracks are available
+      if (!audioPlayer.src && tracks.length > 0) {
+        loadTrack(0);
+      }
+    }
+
+    function scanSoundsFolder() {
+      // Start with only the actual existing track
+      tracks = [
+        { name: "Twinky - Ах, Как Хорошо", file: "sounds/Twinky - Ах, Как Хорошо.mp3" }
+      ];
+      
+      // Check if there are any other MP3 files in the sounds folder
+      // In a real web app, this would scan the directory
+      // For now, we'll only include files that actually exist
+      
+      // Update playlist display
+      updatePlaylistDisplay();
+    }
+
+    function uploadMusic() {п
+      // Create file input for selecting MP3 files from computer
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/mp3,audio/wav,audio/mpeg,audio/ogg';
+      input.multiple = true;
+      
+      input.onchange = function(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        let addedCount = 0;
+        
+        for (let file of files) {
+          const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+          const filePath = `sounds/${file.name}`;
+          
+          // Check if track already exists
+          if (!tracks.some(track => track.file === filePath)) {
+            tracks.push({
+              name: fileName,
+              file: filePath
+            });
+            addedCount++;
+          }
+        }
+        
+        updatePlaylistDisplay();
+        alert(`Добавлено ${addedCount} трек(ов) из ${files.length} выбранных`);
+      };
+      
+      input.click();
+    }
+    
+    function addTrackFromModal() {
+      // This function is no longer needed with the new upload approach
+    }
+
+    function reloadPlaylist() {
+      // Rescan the sounds folder (in a real app, this would scan the directory)
+      // For now, we'll just refresh the display
+      updatePlaylistDisplay();
+      
+      // Also check if any tracks are missing
+      const validTracks = [];
+      let missingCount = 0;
+      
+      tracks.forEach(track => {
+        fetch(track.file, { method: 'HEAD' })
+          .then(response => {
+            if (response.ok) {
+              validTracks.push(track);
+            } else {
+              missingCount++;
+            }
+          })
+          .catch(() => {
+            missingCount++;
+          });
+      });
+      
+      setTimeout(() => {
+        if (missingCount > 0) {
+          alert(`Обновлено! ${missingCount} трек(ов) не найдено.`);
+        } else {
+          alert('Плейлист обновлен!');
+        }
+      }, 1000);
+    }
+
+    function updatePlaylistDisplay() {
+      const playlistDiv = document.getElementById('playlist');
+      playlistDiv.innerHTML = '';
+      
+      if (tracks.length === 0) {
+        playlistDiv.innerHTML = '<div style="text-align: center; color: var(--text-dark); padding: 20px;">Нет доступных треков</div>';
+        return;
+      }
+      
+      tracks.forEach((track, index) => {
+        const trackItem = document.createElement('div');
+        trackItem.className = 'track-item';
+        trackItem.onclick = () => playTrack(index);
+        trackItem.style.cssText = `
+          padding: 12px; 
+          margin: 8px 0; 
+          background: var(--bg-light); 
+          border-radius: 8px; 
+          cursor: pointer; 
+          transition: all 0.2s;
+          border: 1px solid var(--border-color);
+          position: relative;
+        `;
+        
+        // Highlight current track
+        if (index === currentTrackIndex) {
+          trackItem.style.background = 'var(--accent-blue)';
+          trackItem.style.color = 'white';
+        }
+        
+        trackItem.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span style="font-weight: bold; margin-right: 8px;">${index + 1}.</span>
+              <span style="font-weight: bold;">${track.name}</span>
+            </div>
+            <div style="font-size: 12px; opacity: 0.8;">${index === currentTrackIndex ? '▶️' : ''}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-dark); margin-top: 4px;">${track.file}</div>
+        `;
+        
+        trackItem.addEventListener('mouseenter', function() {
+          if (index !== currentTrackIndex) {
+            this.style.background = 'var(--bg-dark)';
+            this.style.transform = 'translateX(3px)';
+          }
+        });
+        
+        trackItem.addEventListener('mouseleave', function() {
+          if (index !== currentTrackIndex) {
+            this.style.background = 'var(--bg-light)';
+            this.style.transform = 'translateX(0)';
+          }
+        });
+        
+        playlistDiv.appendChild(trackItem);
+      });
+      
+      // Update track count display
+      const playlistHeader = document.querySelector('#playlist').parentElement.querySelector('h4');
+      if (playlistHeader) {
+        playlistHeader.innerHTML = `Плейлист <span style="font-size: 12px; color: var(--text-dark);">(${tracks.length} трек${tracks.length === 1 ? '' : 'а'})</span>`;
+      }
+    }
+
+    function loadTrack(index) {
+      if (index < 0 || index >= tracks.length) return;
+      
+      currentTrackIndex = index;
+      const track = tracks[index];
+      
+      // Check if file exists
+      fetch(track.file, { method: 'HEAD' })
+        .then(response => {
+          if (response.ok) {
+            audioPlayer.src = track.file;
+            document.getElementById('currentTrackName').textContent = track.name;
+            updatePlayButton();
+          } else {
+            // File doesn't exist, show error
+            document.getElementById('currentTrackName').textContent = 'Файл не найден: ' + track.name;
+            audioPlayer.src = '';
+          }
+        })
+        .catch(() => {
+          document.getElementById('currentTrackName').textContent = 'Ошибка загрузки: ' + track.name;
+          audioPlayer.src = '';
+        });
+    }
+
+    function playTrack(index) {
+      loadTrack(index);
+      if (audioPlayer.src) {
+        audioPlayer.play();
+        isPlaying = true;
+        updatePlayButton();
+        updatePlaylistDisplay(); // Refresh to highlight current track
+      }
+    }
+
+    function togglePlayPause() {
+      if (!audioPlayer || !audioPlayer.src) return;
+      
+      if (isPlaying) {
+        audioPlayer.pause();
+        isPlaying = false;
+      } else {
+        audioPlayer.play();
+        isPlaying = true;
+      }
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      playPauseBtn.textContent = isPlaying ? '⏸️' : '▶️';
+    }
+
+    function nextTrack() {
+      const nextIndex = (currentTrackIndex + 1) % tracks.length;
+      playTrack(nextIndex);
+    }
+
+    function previousTrack() {
+      const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+      playTrack(prevIndex);
+    }
+
+    function updateDuration() {
+      const totalTime = document.getElementById('totalTime');
+      const minutes = Math.floor(audioPlayer.duration / 60);
+      const seconds = Math.floor(audioPlayer.duration % 60);
+      totalTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress() {
+      if (!audioPlayer.duration) return;
+      
+      const progressBar = document.getElementById('progressBar');
+      const currentTime = document.getElementById('currentTime');
+      
+      const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      progressBar.value = progress;
+      
+      const minutes = Math.floor(audioPlayer.currentTime / 60);
+      const seconds = Math.floor(audioPlayer.currentTime % 60);
+      currentTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Cloud animation functions
+    const cloudPhrases = [
+      "Тыкни меня! 🎯",
+      "Нажми сюда! 💰",
+      "Спец предложение! 🎁",
+      "Не пропусти! ⚡",
+      "Кликай скорее! 🚀",
+      "Только сегодня! 🔥",
+      "Скидка 50%! 💸",
+      "Успей забрать! ⏰",
+      "Эксклюзив! 💎",
+      "Акция! 🎪",
+      "Бери быстрее! 🏃",
+      "Ограниченное время! ⏳",
+      "Супер цена! 💵",
+      "Не упусти шанс! 🌟",
+      "Лучшее предложение! 💯"
+    ];
+
+    let currentPhraseIndex = 0;
+
+    function showCloud() {
+      const cloud = document.getElementById('promoCloud');
+      const text = document.getElementById('cloudText');
+      
+      if (cloud && text) {
+        currentPhraseIndex = Math.floor(Math.random() * cloudPhrases.length);
+        text.textContent = cloudPhrases[currentPhraseIndex];
+        cloud.style.display = 'block';
+        
+        // Add pulse animation
+        cloud.style.animation = 'cloudFloat 3s ease-in-out infinite, cloudPulse 2s ease-in-out infinite';
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+          cloud.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    function startCloudAnimation() {
+      // Show cloud every 15 seconds
+      setInterval(() => {
+        showCloud();
+      }, 15000);
+      
+      // Show first cloud after 5 seconds
+      setTimeout(() => {
+        showCloud();
+      }, 5000);
+    }
+
+    // Start cloud animation when page loads
+    window.addEventListener('load', () => {
+      startCloudAnimation();
+    });
+  </script>
+</body>
+</html>
+
