@@ -1,53 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Сайт закрыт</title>
+  <title>Dota 2 BHV Calculator</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
     body {
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+      background: #0a0e27;
+      color: #fff;
+    }
+
+    /* Animated Gradient Background */
+    .animated-bg {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, #0a0e27, #1a1f3a, #2d1b4e, #1a1f3a);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      z-index: -2;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Particle Effect */
+    .particles {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: float 20s infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+    }
+
+    /* Main Container */
+    .container {
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      font-family: sans-serif;
-      background-color: #1a1a2e;
-      background-image: url('dota2-background.gif');
-      background-size: cover;
-      background-blend-mode: overlay;
-      color: #e0e0e0;
-      margin: 0;
+      padding: 20px;
+      position: relative;
     }
 
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 20px;
+    /* Glassmorphism Card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 30px;
+      padding: 50px 40px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      max-width: 600px;
+      width: 100%;
+      animation: fadeInUp 0.8s ease;
       text-align: center;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Heading Styles */
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
+      animation: glow 2s ease-in-out infinite alternate;
+      text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+    }
+
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5)); }
+      to { filter: drop-shadow(0 0 20px rgba(246, 79, 89, 0.8)); }
     }
 
     p {
-      font-size: 1.2em;
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.7);
       margin-bottom: 30px;
-      text-align: center;
+      font-weight: 300;
     }
 
-    button {
-      padding: 15px 30px;
-      background-color: #007bff;
+    /* Modern Button */
+    .btn {
+      position: relative;
+      padding: 16px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
       color: white;
+      background: linear-gradient(135deg, #667eea, #764ba2);
       border: none;
-      cursor: pointer;
       border-radius: 50px;
-      font-size: 1.1em;
-      transition: background-color 0.3s;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      text-decoration: none;
+      display: inline-block;
     }
 
-    button:hover {
-      background-color: #0056b3;
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s;
     }
 
-    /* Modal styles */
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    /* Floating Calculator Button */
+    .calc-btn {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4); }
+      50% { box-shadow: 0 10px 50px rgba(245, 87, 108, 0.8); }
+    }
+
+    .calc-btn:hover {
+      transform: scale(1.15) rotate(10deg);
+      box-shadow: 0 15px 40px rgba(245, 87, 108, 0.6);
+    }
+
+    .calc-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -55,138 +209,367 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
       justify-content: center;
       align-items: center;
+      z-index: 2000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     .modal-content {
-      background-color: #16213e;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
+      background: rgba(26, 31, 58, 0.95);
+      backdrop-filter: blur(30px);
+      border-radius: 30px;
+      padding: 40px;
+      max-width: 550px;
+      width: 90%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       position: relative;
+      animation: slideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
     }
 
     .close-button {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      cursor: pointer;
-      font-size: 1.5em;
-      color: #e0e0e0;
-    }
-
-    /* Calculator styles */
-    #bhvCalculator {
-      margin-top: 30px;
-    }
-
-    #bhvCalculator label {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    #bhvCalculator input {
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      border: 1px solid #a0a0a0;
-      background-color: #1a1a2e;
-      color: #e0e0e0;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    #bhvCalculator button {
-      padding: 12px 25px;
-      background-color: #28a745;
-      border-radius: 5px;
-      width: 100%;
-    }
-
-    #bhvResult {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: #0f3460;
-      border-radius: 5px;
-      display: none;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* Round button style */
-    .round-button {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 2em;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      transition: background-color 0.3s, transform 0.3s;
     }
 
-    .round-button:hover {
-      background-color: #0056b3;
-      transform: scale(1.1);
+    .close-button:hover {
+      background: rgba(245, 87, 108, 0.8);
+      transform: rotate(90deg);
+    }
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    /* Form Styles */
+    .input-group {
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      color: white;
+      transition: all 0.3s;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #f093fb;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 20px rgba(240, 147, 251, 0.3);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Calculate Button */
+    .calc-submit {
+      width: 100%;
+      padding: 16px;
+      margin-top: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border: none;
+      border-radius: 15px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.4s;
+      box-shadow: 0 10px 25px rgba(245, 87, 108, 0.3);
+    }
+
+    .calc-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(245, 87, 108, 0.5);
+    }
+
+    .calc-submit:active {
+      transform: translateY(0);
+    }
+
+    /* Result Card */
+    .result-card {
+      margin-top: 30px;
+      padding: 30px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: none;
+      animation: fadeInUp 0.5s ease;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-label {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin: 20px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+      border-radius: 10px;
+      transition: width 1s ease;
+      background-size: 200% 100%;
+      animation: progressShine 2s linear infinite;
+    }
+
+    @keyframes progressShine {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .glass-card {
+        padding: 30px 25px;
+      }
+
+      .modal-content {
+        padding: 30px 20px;
+      }
+
+      .calc-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+      }
+    }
+
+    /* Emoji Animation */
+    .emoji {
+      display: inline-block;
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
     }
   </style>
 </head>
 <body>
-  <h1>Сайт закрыт</h1>
-  <p>Спасибо за использование!</p>
-  <button onclick="location.href='https://t.me/PRIMALEBIST'">Связаться с разработчиком</button>
+  <!-- Animated Background -->
+  <div class="animated-bg"></div>
 
-  <!-- Round button to open calculator -->
-  <button class="round-button" onclick="openBhvModal()">📊</button>
+  <!-- Particles -->
+  <div class="particles" id="particles"></div>
 
-  <!-- BHV Calculator Modal -->
-  <div class="modal" id="bhvModal">
+  <!-- Main Container -->
+  <div class="container">
+    <div class="glass-card">
+      <h1> &lt;dev&gt; Cладкий   </h1>
+      <p>Калькулятор порядочности всегда под рукой!</p>
+      <a href="https://t.me/PRIMALEBIST" class="btn">
+        💬 Связаться с разработчиком
+      </a>
+    </div>
+  </div>
+
+  <!-- Floating Calculator Button -->
+  <button class="calc-btn" onclick="openModal()">
+    <span class="emoji">📊</span>
+  </button>
+
+  <!-- Calculator Modal -->
+  <div class="modal" id="calcModal">
     <div class="modal-content">
-      <span class="close-button" onclick="closeBhvModal()">×</span>
-      <h2>Калькулятор порядочности</h2>
-      <div id="bhvCalculator">
-        <label for="bhvStart">Было (текущая порядочность):</label>
-        <input type="number" id="bhvStart" placeholder="0-12000" min="0" max="12000">
-        <label for="bhvEnd">Стало (желаемая порядочность):</label>
-        <input type="number" id="bhvEnd" placeholder="0-12000" min="0" max="12000">
-        <button onclick="calculateBhv()">Рассчитать</button>
-        <div id="bhvResult">
-          <div id="bhvResultContent"></div>
+      <button class="close-button" onclick="closeModal()">×</button>
+      
+      <h2>Калькулятор BHV</h2>
+      
+      <div class="input-group">
+        <label for="bhvStart">🎯 Текущая порядочность</label>
+        <input type="number" id="bhvStart" placeholder="Введите от 0 до 12000" min="0" max="12000">
+      </div>
+
+      <div class="input-group">
+        <label for="bhvEnd">🏆 Желаемая порядочность</label>
+        <input type="number" id="bhvEnd" placeholder="Введите от 0 до 12000" min="0" max="12000">
+      </div>
+
+      <button class="calc-submit" onclick="calculate()">
+        ✨ Рассчитать
+      </button>
+
+      <div class="result-card" id="resultCard">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="result-item">
+          <span class="result-label">📈 Надо набрать</span>
+          <span class="result-value" id="needed">0</span>
+        </div>
+        
+        <div class="result-item">
+          <span class="result-label">🎮 Примерно игр</span>
+          <span class="result-value" id="games">0</span>
+        </div>
+        
+        <div class="result-item">
+          <span class="result-label">📋 Табличек нужно</span>
+          <span class="result-value" id="tables">0</span>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    function openBhvModal() {
-      document.getElementById('bhvModal').style.display = 'flex';
+    // Create particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 50;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+        particlesContainer.appendChild(particle);
+      }
     }
 
-    function closeBhvModal() {
-      document.getElementById('bhvModal').style.display = 'none';
+    createParticles();
+
+    // Modal functions
+    function openModal() {
+      document.getElementById('calcModal').style.display = 'flex';
     }
 
-    function calculateBhv() {
+    function closeModal() {
+      document.getElementById('calcModal').style.display = 'none';
+    }
+
+    // Close on outside click
+    window.onclick = function(event) {
+      const modal = document.getElementById('calcModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+
+    // Calculate function
+    function calculate() {
       const start = parseInt(document.getElementById('bhvStart').value);
       const end = parseInt(document.getElementById('bhvEnd').value);
 
       if (isNaN(start) || isNaN(end)) {
-        alert('Пожалуйста, введите корректные числа');
+        alert('⚠️ Пожалуйста, введите корректные числа');
+        return;
+      }
+
+      if (start < 0 || start > 12000 || end < 0 || end > 12000) {
+        alert('⚠️ Значения должны быть от 0 до 12000');
         return;
       }
 
       if (start >= end) {
-        alert('Значение "Было" должно быть меньше значения "Стало"');
+        alert('⚠️ Текущая порядочность должна быть меньше желаемой');
         return;
       }
 
@@ -219,19 +602,29 @@
       totalGames = Math.max(totalGames, 0);
       const tables = Math.ceil(totalGames / 15);
 
-      const resultDiv = document.getElementById('bhvResult');
-      const resultContent = document.getElementById('bhvResultContent');
+      // Update UI
+      document.getElementById('needed').textContent = needed;
+      document.getElementById('games').textContent = totalGames;
+      document.getElementById('tables').textContent = tables;
 
-      resultContent.innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-size: 1.2em; margin-bottom: 10px;">📈 Надо апнуть: <strong>${needed}</strong> порядочности</div>
-          <div style="font-size: 1.1em; margin-bottom: 10px;">🎮 Примерно игр нужно: <strong>${totalGames}</strong></div>
-          <div style="font-size: 1.1em;">📋 Табличек нужно: <strong>${tables}</strong></div>
-        </div>
-      `;
+      // Progress bar
+      const progress = (start / end) * 100;
+      document.getElementById('progressBar').style.width = progress + '%';
 
-      resultDiv.style.display = 'block';
+      // Show result
+      const resultCard = document.getElementById('resultCard');
+      resultCard.style.display = 'block';
+
+      // Scroll to result
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+
+    // Enter key to calculate
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && document.getElementById('calcModal').style.display === 'flex') {
+        calculate();
+      }
+    });
   </script>
 </body>
 </html>
